@@ -44,8 +44,8 @@ from core.audit import AuditLog
 from core.network import GhostLink
 from core.session import SecureSession
 
-# --- DESIGN SYSTEM ---
-ACCENT_COLOR = "#00e676"  # Default Green
+
+ACCENT_COLOR = "#00e676" 
 BG_COLOR = "#09090b"
 CARD_COLOR = "#18181b"
 TEXT_COLOR = "#ffffff"
@@ -85,7 +85,7 @@ QPushButton#Danger {{
 """
 
 
-# --- ANIMATION HELPER ---
+
 class FadeStack(QStackedWidget):
     """Custom Stacked Widget with Fade Animation"""
 
@@ -100,7 +100,7 @@ class FadeStack(QStackedWidget):
         current_widget = self.currentWidget()
         next_widget = self.widget(index)
 
-        # Setup effects
+
         self.eff1 = QGraphicsOpacityEffect(self)
         self.eff2 = QGraphicsOpacityEffect(self)
         current_widget.setGraphicsEffect(self.eff1)
@@ -127,7 +127,7 @@ class FadeStack(QStackedWidget):
         self.anim_group.start()
 
 
-# --- WORKER THREAD ---
+
 class TaskWorker(QThread):
     finished = pyqtSignal(object)
 
@@ -143,7 +143,7 @@ class TaskWorker(QThread):
             self.finished.emit((False, str(e)))
 
 
-# --- MAIN WINDOW ---
+
 class NDSFC_Pro(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -155,22 +155,22 @@ class NDSFC_Pro(QMainWindow):
         self.auth = AuthManager()
         self.session = SecureSession()
 
-        # Main Stack
+
         self.main_stack = FadeStack()
         self.setCentralWidget(self.main_stack)
 
         self.init_login_ui()
         self.init_dashboard_ui()
 
-        # Check vaults
+
         if not self.vault_mgr.list_vaults():
             self.show_create_vault_dialog()
 
     def show_create_vault_dialog(self):
-        # A simple dialog to init the first vault
+
         d = QWidget()
         d.setWindowTitle("Create Environment")
-        # In real app use QDialog, simplified here
+
         name, ok = QInputDialog.getText(self, "Init", "Environment Name:")
         if ok and name:
             u, ok2 = QInputDialog.getText(self, "Init", "Username:")
@@ -180,7 +180,7 @@ class NDSFC_Pro(QMainWindow):
                 QMessageBox.information(self, "Vault Created", f"Secret: {sec}")
                 self.refresh_vaults()
 
-    # --- LOGIN SCREEN ---
+
     def init_login_ui(self):
         w = QWidget()
         layout = QVBoxLayout(w)
@@ -192,7 +192,7 @@ class NDSFC_Pro(QMainWindow):
         cl.setContentsMargins(40, 40, 40, 40)
         cl.setSpacing(20)
 
-        # Logo Icon
+
         icon_lbl = QLabel()
         icon_lbl.setPixmap(
             qta.icon("fa5s.fingerprint", color=ACCENT_COLOR).pixmap(64, 64)
@@ -243,14 +243,14 @@ class NDSFC_Pro(QMainWindow):
         self.cb_vaults.clear()
         self.cb_vaults.addItems(self.vault_mgr.list_vaults())
 
-    # --- DASHBOARD SCREEN ---
+
     def init_dashboard_ui(self):
         w = QWidget()
         row = QHBoxLayout(w)
         row.setContentsMargins(0, 0, 0, 0)
         row.setSpacing(0)
 
-        # Sidebar
+
         sidebar = QFrame(objectName="Sidebar")
         sidebar.setFixedWidth(280)
         sb_l = QVBoxLayout(sidebar)
@@ -266,7 +266,7 @@ class NDSFC_Pro(QMainWindow):
 
         self.dash_stack = FadeStack()
 
-        # Nav Buttons
+
         btns = [
             ("Dashboard", "fa5s.chart-pie", 0),
             ("Cryptographer", "fa5s.lock", 1),
@@ -287,7 +287,7 @@ class NDSFC_Pro(QMainWindow):
         b_out.clicked.connect(self.do_logout)
         sb_l.addWidget(b_out)
 
-        # Tabs
+
         self.dash_stack.addWidget(self.tab_home())
         self.dash_stack.addWidget(self.tab_crypto())
         self.dash_stack.addWidget(self.tab_omega())
@@ -299,9 +299,9 @@ class NDSFC_Pro(QMainWindow):
 
     def switch_tab(self, idx):
         self.dash_stack.fade_to_index(idx)
-        # Highlight logic could go here
 
-    # --- TABS IMPLEMENTATION ---
+
+
     def tab_home(self):
         p = QWidget()
         l = QVBoxLayout(p)
@@ -347,7 +347,7 @@ class NDSFC_Pro(QMainWindow):
             )
         )
 
-        # Config Area
+
         conf = QHBoxLayout()
         self.chk_shred = QCheckBox("Secure Shred (3-pass)")
         self.chk_shred.setChecked(True)
@@ -358,7 +358,7 @@ class NDSFC_Pro(QMainWindow):
         conf.addStretch()
         l.addLayout(conf)
 
-        # Drag Drop
+
         self.file_list = QListWidget()
         self.file_list.setAcceptDrops(True)
         self.file_list.dragEnterEvent = lambda e: e.accept()
@@ -368,7 +368,7 @@ class NDSFC_Pro(QMainWindow):
         self.file_list.setStyleSheet("border: 2px dashed #3f3f46; background: #141417;")
         l.addWidget(self.file_list)
 
-        # Actions
+
         acts = QHBoxLayout()
         b_add = QPushButton(" Add Files")
         b_add.clicked.connect(self.add_files)
@@ -432,7 +432,7 @@ class NDSFC_Pro(QMainWindow):
         )
 
         grid = QHBoxLayout()
-        # Card 1
+
         c1 = QFrame(objectName="Card")
         l1 = QVBoxLayout(c1)
         l1.addWidget(
@@ -445,7 +445,7 @@ class NDSFC_Pro(QMainWindow):
         )
         l1.addWidget(b1)
 
-        # Card 2
+
         c2 = QFrame(objectName="Card")
         l2 = QVBoxLayout(c2)
         l2.addWidget(
@@ -461,7 +461,7 @@ class NDSFC_Pro(QMainWindow):
         l.addStretch()
         return p
 
-    # --- HELPERS ---
+
     def mk_stat_card(self, t, v_func, color):
         f = QFrame(objectName="Card")
         l = QVBoxLayout(f)
@@ -483,7 +483,7 @@ class NDSFC_Pro(QMainWindow):
         for f in fs:
             self.file_list.addItem(f)
 
-    # --- ACTIONS ---
+
     def do_login(self):
         vault_name = self.cb_vaults.currentText()
         pwd = self.in_pass.text()
@@ -554,7 +554,7 @@ class NDSFC_Pro(QMainWindow):
             self.log_list.addItem(l)
 
     def apply_theme(self, theme_name):
-        # Палитра
+
         colors = {
             "Cyber Green": "#00e676",
             "Red Alert": "#ff3d3d",
@@ -600,3 +600,4 @@ def main():
     w = NDSFC_Pro()
     w.show()
     sys.exit(app.exec())
+
