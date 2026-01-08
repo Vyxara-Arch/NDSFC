@@ -6,8 +6,6 @@ import socket
 class GhostLink:
     def __init__(self):
         self.client = paramiko.SSHClient()
-        # Use system and user known_hosts files and keep the secure default
-        # RejectPolicy, which will raise if the host key is unknown.
         self.client.load_system_host_keys()
         self.client.load_host_keys(paramiko.util.load_host_keys_filename())
         self.sftp = None
@@ -60,4 +58,5 @@ class GhostLink:
         if self.sftp:
             self.sftp.close()
         self.client.close()
+
 
