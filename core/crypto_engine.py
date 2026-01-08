@@ -1,0 +1,179 @@
+import os
+import struct
+import hashlib
+from Crypto.Cipher import ChaCha20_Poly1305, AES
+from Crypto.Random import get_random_bytes
+from Crypto.Protocol.KDF import scrypt
+from core.shredder import Shredder
+
+
+class CryptoEngine:
+    # Заголовки (Magic Bytes)
+    MAGIC_STD = b"NDS1"
+    MAGIC_2FA = b"NDS2"
+    MAGIC_PQC = b"NDSQ"  # Post-Quantum Cascade
+
+    @staticmethod
+    def derive_key(password: str, salt: bytes, length=32) -> bytes:
+        # Усиленный KDF для защиты от перебора
+        return scrypt(password.encode(), salt, length, N=2**15, r=8, p=1)
+
+    @staticmethod
+    def encrypt_advanced(input_path, password, mode, sec_q=None, sec_a=None):
+        """
+        mode: 'standard', 'pqc' (Quantum), '2fa'
+        sec_q: Вопрос (для 2FA)
+        sec_a: Ответ (для 2FA)
+        """
+        salt = get_random_bytes(16)
+        out_path = input_path + ".ndsfc"
+
+        # 1. Генерация ключа
+        key = CryptoEngine.derive_key(password, salt)
+
+        # 2. Подготовка заголовка
+        header = bytearray()
+        header.extend(salt)
+
+        with open(input_path, "rb") as f:
+            plaintext = f.read()
+
+        ciphertext = b""
+        tag = b""
+        nonce = b""
+        final_magic = b""
+
+        if mode == "pqc":
+            # === QUANTUM RESISTANT CASCADE ===
+            # Слой 1: AES-256
+            final_magic = CryptoEngine.MAGIC_PQC
+            cipher1 = AES.new(key, AES.MODE_GCM)
+            temp_cipher, tag1 = cipher1.encrypt_and_digest(plaintext)
+
+            # Слой 2: ChaCha20 (на производном ключе)
+            key2 = hashlib.sha256(key).digest()  # Меняем ключ для второго слоя
+            cipher2 = ChaCha20_Poly1305.new(key=key2)
+            final_cipher, tag2 = cipher2.encrypt_and_digest(
+                temp_cipher + tag1 + cipher1.nonce
+            )
+
+            nonce = cipher2.nonce
+            tag = tag2
+            ciphertext = final_cipher
+
+        elif mode == "2fa":
+            # === 2FA FILE LOCK ===
+            final_magic = CryptoEngine.MAGIC_2FA
+            # Хешируем ответ на вопрос
+            ans_hash = hashlib.sha256(sec_a.lower().strip().encode()).digest()
+            # Шифруем AES, используя Ключ_Пароля XOR Ключ_Ответа
+            mixed_key = bytes(a ^ b for a, b in zip(key, ans_hash))
+
+            cipher = ChaCha20_Poly1305.new(key=mixed_key)
+            nonce = cipher.nonce
+            ciphertext, tag = cipher.encrypt_and_digest(plaintext)
+
+            # Сохраняем вопрос в открытом виде (чтобы спросить пользователя), но ответ не храним
+            q_bytes = sec_q.encode("utf-8")
+            q_len = struct.pack(">I", len(q_bytes))
+            header.extend(q_len)
+            header.extend(q_bytes)
+
+        else:
+            # === STANDARD ===
+            final_magic = CryptoEngine.MAGIC_STD
+            cipher = ChaCha20_Poly1305.new(key=key)
+            nonce = cipher.nonce
+            ciphertext, tag = cipher.encrypt_and_digest(plaintext)
+
+        # Запись файла
+        with open(out_path, "wb") as f:
+            f.write(final_magic)  # 4 байта
+            f.write(header)  # Соль + доп. данные
+            f.write(nonce)  # 12 или 16 байт
+            f.write(tag)  # 16 байт
+            f.write(ciphertext)
+
+        return True, out_path
+
+    @staticmethod
+    def decrypt_advanced(input_path, password, sec_a_input=None):
+        try:
+            with open(input_path, "rb") as f:
+                magic = f.read(4)
+                salt = f.read(16)
+                key = CryptoEngine.derive_key(password, salt)
+
+                # Логика в зависимости от Magic Bytes
+                if magic == CryptoEngine.MAGIC_PQC:
+                    nonce = f.read(12)
+                    tag = f.read(16)
+                    ciphertext = f.read()
+
+                    # Слой 2 (снимаем ChaCha)
+                    key2 = hashlib.sha256(key).digest()
+                    cipher2 = ChaCha20_Poly1305.new(key=key2, nonce=nonce)
+                    inner_data = cipher2.decrypt_and_verify(ciphertext, tag)
+
+                    # Разбор внутреннего слоя (AES)
+                    # Структура: [AES_CIPHER][AES_TAG:16][AES_NONCE:16]
+                    aes_nonce = inner_data[-16:]
+                    aes_tag = inner_data[-32:-16]
+                    aes_cipher = inner_data[:-32]
+
+                    cipher1 = AES.new(key, AES.MODE_GCM, nonce=aes_nonce)
+                    plaintext = cipher1.decrypt_and_verify(aes_cipher, aes_tag)
+
+                elif magic == CryptoEngine.MAGIC_2FA:
+                    # Читаем длину вопроса и сам вопрос (пропускаем их, они нужны UI)
+                    q_len = struct.unpack(">I", f.read(4))[0]
+                    f.read(q_len)  # Пропускаем вопрос
+
+                    nonce = f.read(12)
+                    tag = f.read(16)
+                    ciphertext = f.read()
+
+                    if not sec_a_input:
+                        raise ValueError("2FA Answer Required")
+
+                    ans_hash = hashlib.sha256(
+                        sec_a_input.lower().strip().encode()
+                    ).digest()
+                    mixed_key = bytes(a ^ b for a, b in zip(key, ans_hash))
+
+                    cipher = ChaCha20_Poly1305.new(key=mixed_key, nonce=nonce)
+                    plaintext = cipher.decrypt_and_verify(ciphertext, tag)
+
+                elif magic == CryptoEngine.MAGIC_STD:
+                    nonce = f.read(12)
+                    tag = f.read(16)
+                    ciphertext = f.read()
+
+                    cipher = ChaCha20_Poly1305.new(key=key, nonce=nonce)
+                    plaintext = cipher.decrypt_and_verify(ciphertext, tag)
+                else:
+                    return False, "Unknown File Format"
+
+            # Save
+            out_path = input_path.replace(".ndsfc", "")
+            with open(out_path, "wb") as f:
+                f.write(plaintext)
+
+            return True, out_path
+
+        except ValueError:
+            return False, "DECRYPTION FAILED: Wrong password or integrity corrupted."
+        except Exception as e:
+            return False, str(e)
+
+    @staticmethod
+    def get_2fa_question(input_path):
+        """Извлекает вопрос из заголовка файла без расшифровки."""
+        with open(input_path, "rb") as f:
+            magic = f.read(4)
+            if magic != CryptoEngine.MAGIC_2FA:
+                return None
+            f.read(16)  # salt
+            q_len = struct.unpack(">I", f.read(4))[0]
+            question = f.read(q_len).decode("utf-8")
+            return question
