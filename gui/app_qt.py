@@ -1433,7 +1433,17 @@ class NDSFC_Pro(QMainWindow):
         self.set_shred.setSuffix(" Passes")
 
         self.set_theme = QComboBox()
-        self.set_theme.addItems(["Cyber Green", "Red Alert", "Deep Purple"])
+        self.set_theme.addItems(
+            [
+                "Cyber Green",
+                "Matrix Code",
+                "Cyberpunk Pink",
+                "Ocean Blue",
+                "Sunset Orange",
+                "Red Alert",
+                "Deep Purple",
+            ]
+        )
 
         btn_save = QPushButton("Save Configuration", objectName="Primary")
         btn_save.clicked.connect(self.save_settings)
@@ -1493,8 +1503,25 @@ class NDSFC_Pro(QMainWindow):
         return p
 
     def on_drop(self, e):
+        files_added = 0
         for u in e.mimeData().urls():
-            self.file_list.addItem(u.toLocalFile())
+            path = u.toLocalFile()
+            if os.path.exists(path) and os.path.isfile(path):
+                self.file_list.addItem(path)
+                files_added += 1
+
+        if files_added > 0:
+            self.update_file_stats()
+            # Visual feedback
+            self.file_list.setStyleSheet(
+                "border: 2px solid #00e676; background: #18181b; color: white; padding: 10px;"
+            )
+            QTimer.singleShot(
+                500,
+                lambda: self.file_list.setStyleSheet(
+                    "border: 2px dashed #3f3f46; background: #18181b; color: white; padding: 10px;"
+                ),
+            )
 
     def add_files(self):
         fs, _ = QFileDialog.getOpenFileNames(self, "Select Files")
@@ -1606,25 +1633,54 @@ class NDSFC_Pro(QMainWindow):
             self.list_audit.addItem(l)
 
     def apply_theme(self, theme_name):
-
-        colors = {
-            "Cyber Green": "#00e676",
-            "Red Alert": "#ff3d3d",
-            "Deep Purple": "#7f5af0",
-            "Ocean Blue": "#00b4d8",
+        # Complete theme palettes
+        themes = {
+            "Cyber Green": {
+                "accent": "#00e676",
+                "secondary": "#7f5af0",
+                "tertiary": "#00b4d8",
+            },
+            "Matrix Code": {
+                "accent": "#00ff41",
+                "secondary": "#39ff14",
+                "tertiary": "#0dff00",
+            },
+            "Cyberpunk Pink": {
+                "accent": "#ff006e",
+                "secondary": "#fb5607",
+                "tertiary": "#8338ec",
+            },
+            "Ocean Blue": {
+                "accent": "#00b4d8",
+                "secondary": "#0077b6",
+                "tertiary": "#90e0ef",
+            },
+            "Sunset Orange": {
+                "accent": "#ff6b35",
+                "secondary": "#f7931e",
+                "tertiary": "#ffd23f",
+            },
+            "Red Alert": {
+                "accent": "#ff3d3d",
+                "secondary": "#ff6b6b",
+                "tertiary": "#ff8787",
+            },
+            "Deep Purple": {
+                "accent": "#7f5af0",
+                "secondary": "#9f7af0",
+                "tertiary": "#b794f6",
+            },
         }
-        accent = colors.get(theme_name, "#00e676")
 
+        theme = themes.get(theme_name, themes["Cyber Green"])
+        accent = theme["accent"]
+        secondary = theme["secondary"]
+
+        # Replace colors in stylesheet
         NEW_STYLESHEET = STYLESHEET.replace(ACCENT_COLOR, accent)
-
-        if theme_name == "Red Alert":
-            NEW_STYLESHEET += (
-                "\nQPushButton#Primary { background-color: #ff3d3d; color: white; }"
-            )
+        NEW_STYLESHEET = NEW_STYLESHEET.replace(ACCENT_SECONDARY, secondary)
 
         self.setStyleSheet(NEW_STYLESHEET)
-
-        self.set_theme.setStyleSheet(f"border: 1px solid {accent};")
 
     def save_settings(self):
         algo = self.set_algo.currentText()
