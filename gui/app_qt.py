@@ -73,51 +73,62 @@ from core.session import SecureSession
 from core.session import SecureSession
 
 
+# Modern Glassmorphic Color Palette
 ACCENT_COLOR = "#00e676"
-BG_COLOR = "#09090b"
-CARD_COLOR = "#18181b"
+ACCENT_SECONDARY = "#7f5af0"
+ACCENT_TERTIARY = "#00b4d8"
+BG_COLOR = "#0a0a0f"
+BG_GRADIENT_START = "#0f0f1a"
+BG_GRADIENT_END = "#1a1a2e"
+CARD_COLOR = "rgba(30, 30, 45, 0.7)"
+CARD_HOVER = "rgba(40, 40, 60, 0.8)"
+GLASS_BORDER = "rgba(255, 255, 255, 0.1)"
 TEXT_COLOR = "#ffffff"
+TEXT_MUTED = "#a0a0b0"
+SHADOW_COLOR = "rgba(0, 0, 0, 0.3)"
 
 
 class SystemMonitorWidget(QFrame):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setObjectName("Card")
-        self.setStyleSheet(
-            f"QFrame#Card {{ background-color: {CARD_COLOR}; border-radius: 16px; border: 1px solid #27272a; }}"
-        )
         self.setFixedSize(300, 160)
 
         layout = QVBoxLayout(self)
+        layout.setContentsMargins(20, 20, 20, 20)
+        layout.setSpacing(12)
 
         l_title = QLabel("System Vitality")
-        l_title.setStyleSheet("font-weight: bold; color: gray;")
+        l_title.setStyleSheet(
+            f"font-weight: 600; color: {TEXT_MUTED}; font-size: 14px;"
+        )
         layout.addWidget(l_title)
 
         # CPU
         self.cpu_bar = QProgressBar()
-        self.cpu_bar.setStyleSheet(
-            f"QProgressBar {{ border: 0px; background: #27272a; height: 8px; border-radius: 4px; }} QProgressBar::chunk {{ background: {ACCENT_COLOR}; border-radius: 4px; }}"
-        )
         self.cpu_bar.setTextVisible(False)
         self.cpu_bar.setRange(0, 100)
+        self.cpu_bar.setFixedHeight(10)
 
         self.lbl_cpu = QLabel("CPU: 0%")
-        self.lbl_cpu.setStyleSheet("font-size: 12px; font-weight: bold;")
+        self.lbl_cpu.setStyleSheet(
+            f"font-size: 13px; font-weight: 600; color: {ACCENT_COLOR};"
+        )
 
         layout.addWidget(self.lbl_cpu)
         layout.addWidget(self.cpu_bar)
+        layout.addSpacing(8)
 
         # RAM
         self.ram_bar = QProgressBar()
-        self.ram_bar.setStyleSheet(
-            "QProgressBar { border: 0px; background: #27272a; height: 8px; border-radius: 4px; } QProgressBar::chunk { background: #7f5af0; border-radius: 4px; }"
-        )
         self.ram_bar.setTextVisible(False)
         self.ram_bar.setRange(0, 100)
+        self.ram_bar.setFixedHeight(10)
 
         self.lbl_ram = QLabel("RAM: 0%")
-        self.lbl_ram.setStyleSheet("font-size: 12px; font-weight: bold;")
+        self.lbl_ram.setStyleSheet(
+            f"font-size: 13px; font-weight: 600; color: {ACCENT_SECONDARY};"
+        )
 
         layout.addWidget(self.lbl_ram)
         layout.addWidget(self.ram_bar)
@@ -140,36 +151,322 @@ class SystemMonitorWidget(QFrame):
 
 
 STYLESHEET = f"""
-QMainWindow {{ background-color: {BG_COLOR}; }}
-QWidget {{ color: {TEXT_COLOR}; font-family: 'Segoe UI', sans-serif; font-size: 14px; }}
-
-/* Inputs */
-QLineEdit, QComboBox, QSpinBox {{
-    background-color: #1f1f22; border: 1px solid #27272a; border-radius: 8px; padding: 10px; color: white;
+/* Global Styles */
+QMainWindow {{
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
+        stop:0 {BG_GRADIENT_START}, stop:1 {BG_GRADIENT_END});
 }}
-QLineEdit:focus, QComboBox:focus {{ border: 1px solid {ACCENT_COLOR}; }}
 
-/* Cards */
+QWidget {{
+    color: {TEXT_COLOR};
+    font-family: 'Inter', 'Segoe UI', -apple-system, sans-serif;
+    font-size: 13px;
+    font-weight: 400;
+}}
+
+/* Glassmorphic Cards */
 QFrame#Card {{
-    background-color: {CARD_COLOR}; border-radius: 16px; border: 1px solid #27272a;
+    background: {CARD_COLOR};
+    border: 1px solid {GLASS_BORDER};
+    border-radius: 20px;
 }}
 
-/* Sidebar */
-QFrame#Sidebar {{ background-color: #141417; border-right: 1px solid #27272a; }}
+QFrame#Card:hover {{
+    background: {CARD_HOVER};
+    border: 1px solid rgba(255, 255, 255, 0.15);
+}}
 
-/* Buttons */
+/* Sidebar with Glass Effect */
+QFrame#Sidebar {{
+    background: rgba(20, 20, 30, 0.85);
+    border-right: 1px solid {GLASS_BORDER};
+}}
+
+/* Modern Input Fields */
+QLineEdit, QComboBox, QSpinBox {{
+    background: rgba(30, 30, 45, 0.6);
+    border: 1px solid {GLASS_BORDER};
+    border-radius: 12px;
+    padding: 12px 16px;
+    color: white;
+    font-size: 14px;
+    selection-background-color: {ACCENT_COLOR};
+}}
+
+QLineEdit:focus, QComboBox:focus, QSpinBox:focus {{
+    border: 2px solid {ACCENT_COLOR};
+    background: rgba(30, 30, 45, 0.8);
+}}
+
+QLineEdit:hover, QComboBox:hover, QSpinBox:hover {{
+    background: rgba(40, 40, 60, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}}
+
+/* ComboBox Dropdown */
+QComboBox::drop-down {{
+    border: none;
+    width: 30px;
+}}
+
+QComboBox::down-arrow {{
+    image: none;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-top: 5px solid {TEXT_MUTED};
+    margin-right: 10px;
+}}
+
+QComboBox QAbstractItemView {{
+    background: rgba(30, 30, 45, 0.95);
+    border: 1px solid {GLASS_BORDER};
+    border-radius: 12px;
+    selection-background-color: {ACCENT_COLOR};
+    selection-color: black;
+    padding: 5px;
+}}
+
+/* Minimalist Buttons */
 QPushButton {{
-    background-color: #27272a; border-radius: 8px; padding: 12px; color: #a1a1aa; font-weight: 600; text-align: left;
+    background: rgba(50, 50, 70, 0.6);
+    border: 1px solid {GLASS_BORDER};
+    border-radius: 12px;
+    padding: 12px 20px;
+    color: {TEXT_MUTED};
+    font-weight: 600;
+    font-size: 13px;
+    text-align: center;
 }}
-QPushButton:hover {{ background-color: #3f3f46; color: white; }}
 
+QPushButton:hover {{
+    background: rgba(70, 70, 90, 0.8);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}}
+
+QPushButton:pressed {{
+    background: rgba(40, 40, 60, 0.9);
+}}
+
+/* Primary Action Button */
 QPushButton#Primary {{
-    background-color: {ACCENT_COLOR}; color: black; text-align: center;
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+        stop:0 {ACCENT_COLOR}, stop:1 #00d866);
+    color: #000000;
+    font-weight: 700;
+    border: none;
 }}
-QPushButton#Primary:hover {{ background-color: #00c853; }}
 
+QPushButton#Primary:hover {{
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+        stop:0 #00ff88, stop:1 {ACCENT_COLOR});
+}}
+
+QPushButton#Primary:pressed {{
+    background: {ACCENT_COLOR};
+}}
+
+/* Danger/Alert Button */
 QPushButton#Danger {{
-    background-color: #ff3d3d; color: white; text-align: center;
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+        stop:0 #ff3d3d, stop:1 #ff5555);
+    color: white;
+    font-weight: 700;
+    border: none;
+}}
+
+QPushButton#Danger:hover {{
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+        stop:0 #ff5555, stop:1 #ff3d3d);
+}}
+
+/* Secondary Button */
+QPushButton#Secondary {{
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+        stop:0 {ACCENT_SECONDARY}, stop:1 #9f7af0);
+    color: white;
+    font-weight: 700;
+    border: none;
+}}
+
+QPushButton#Secondary:hover {{
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+        stop:0 #9f7af0, stop:1 {ACCENT_SECONDARY});
+}}
+
+/* Checkboxes */
+QCheckBox {{
+    color: {TEXT_COLOR};
+    spacing: 8px;
+}}
+
+QCheckBox::indicator {{
+    width: 20px;
+    height: 20px;
+    border-radius: 6px;
+    border: 2px solid {GLASS_BORDER};
+    background: rgba(30, 30, 45, 0.6);
+}}
+
+QCheckBox::indicator:hover {{
+    border: 2px solid {ACCENT_COLOR};
+    background: rgba(40, 40, 60, 0.7);
+}}
+
+QCheckBox::indicator:checked {{
+    background: {ACCENT_COLOR};
+    border: 2px solid {ACCENT_COLOR};
+    image: none;
+}}
+
+/* Progress Bars */
+QProgressBar {{
+    border: none;
+    background: rgba(30, 30, 45, 0.6);
+    border-radius: 8px;
+    height: 12px;
+    text-align: center;
+}}
+
+QProgressBar::chunk {{
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+        stop:0 {ACCENT_COLOR}, stop:1 {ACCENT_TERTIARY});
+    border-radius: 8px;
+}}
+
+/* List Widgets */
+QListWidget {{
+    background: rgba(20, 20, 35, 0.5);
+    border: 1px solid {GLASS_BORDER};
+    border-radius: 12px;
+    padding: 8px;
+    color: white;
+}}
+
+QListWidget::item {{
+    padding: 10px;
+    border-radius: 8px;
+    margin: 2px 0;
+}}
+
+QListWidget::item:hover {{
+    background: rgba(50, 50, 70, 0.6);
+}}
+
+QListWidget::item:selected {{
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+        stop:0 rgba(0, 230, 118, 0.3), stop:1 rgba(0, 180, 216, 0.3));
+    border-left: 3px solid {ACCENT_COLOR};
+}}
+
+/* Scrollbars */
+QScrollBar:vertical {{
+    background: transparent;
+    width: 10px;
+    margin: 0;
+}}
+
+QScrollBar::handle:vertical {{
+    background: rgba(100, 100, 120, 0.5);
+    border-radius: 5px;
+    min-height: 30px;
+}}
+
+QScrollBar::handle:vertical:hover {{
+    background: rgba(120, 120, 140, 0.7);
+}}
+
+QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{
+    height: 0px;
+}}
+
+QScrollBar:horizontal {{
+    background: transparent;
+    height: 10px;
+    margin: 0;
+}}
+
+QScrollBar::handle:horizontal {{
+    background: rgba(100, 100, 120, 0.5);
+    border-radius: 5px;
+    min-width: 30px;
+}}
+
+QScrollBar::handle:horizontal:hover {{
+    background: rgba(120, 120, 140, 0.7);
+}}
+
+/* Tab Widget */
+QTabWidget::pane {{
+    border: none;
+    background: transparent;
+}}
+
+QTabBar::tab {{
+    background: rgba(30, 30, 45, 0.5);
+    color: {TEXT_MUTED};
+    padding: 12px 24px;
+    margin-right: 4px;
+    border-radius: 12px 12px 0 0;
+    font-weight: 600;
+}}
+
+QTabBar::tab:selected {{
+    background: {CARD_COLOR};
+    color: {ACCENT_COLOR};
+    border-bottom: 3px solid {ACCENT_COLOR};
+}}
+
+QTabBar::tab:hover {{
+    background: rgba(40, 40, 60, 0.7);
+    color: white;
+}}
+
+/* Tooltips */
+QToolTip {{
+    background: rgba(30, 30, 45, 0.95);
+    color: white;
+    border: 1px solid {GLASS_BORDER};
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 12px;
+}}
+
+/* SpinBox */
+QSpinBox::up-button, QSpinBox::down-button {{
+    background: rgba(50, 50, 70, 0.6);
+    border: none;
+    border-radius: 6px;
+    width: 20px;
+}}
+
+QSpinBox::up-button:hover, QSpinBox::down-button:hover {{
+    background: rgba(70, 70, 90, 0.8);
+}}
+
+/* Text Edit */
+QTextEdit {{
+    background: rgba(20, 20, 35, 0.5);
+    border: 1px solid {GLASS_BORDER};
+    border-radius: 12px;
+    padding: 12px;
+    color: white;
+}}
+
+/* Group Box */
+QGroupBox {{
+    border: 1px solid {GLASS_BORDER};
+    border-radius: 12px;
+    margin-top: 12px;
+    padding-top: 12px;
+    font-weight: 600;
+    color: {TEXT_COLOR};
+}}
+
+QGroupBox::title {{
+    subcontrol-origin: margin;
+    left: 12px;
+    padding: 0 8px;
 }}
 """
 
@@ -818,7 +1115,7 @@ class NDSFC_Pro(QMainWindow):
 
         sb_l.addWidget(
             QLabel(
-                "NDSFC PRO",
+                "NDSFC",
                 styleSheet=f"font-size: 26px; font-weight: bold; color: {ACCENT_COLOR};",
             )
         )
@@ -965,47 +1262,144 @@ class NDSFC_Pro(QMainWindow):
     def tab_crypto(self):
         p = QWidget()
         l = QVBoxLayout(p)
-        l.setContentsMargins(50, 50, 50, 50)
-        l.addWidget(
+        l.setContentsMargins(30, 30, 30, 30)
+
+        # Header
+        header = QHBoxLayout()
+        lbl_title = QLabel("Cryptographer")
+        lbl_title.setStyleSheet("font-size: 28px; font-weight: bold; color: white;")
+        header.addWidget(lbl_title)
+        header.addStretch()
+        l.addLayout(header)
+        l.addSpacing(20)
+
+        # Grid Layout for Controls and File List
+        grid = QGridLayout()
+        grid.setSpacing(20)
+
+        # Left Panel: Configuration
+        config_card = QFrame(objectName="Card")
+        config_card.setStyleSheet(
+            f"QFrame#Card {{ background-color: {CARD_COLOR}; border-radius: 16px; border: 1px solid #27272a; }}"
+        )
+        config_card.setFixedWidth(320)
+        cl = QVBoxLayout(config_card)
+        cl.setSpacing(15)
+
+        cl.addWidget(
             QLabel(
-                "Multi-Layer Encryption",
-                styleSheet="font-size: 28px; font-weight: bold;",
+                "Encryption Settings",
+                styleSheet="font-weight: bold; color: gray; font-size: 16px;",
             )
         )
 
-        conf = QHBoxLayout()
-        self.chk_shred = QCheckBox("Secure Shred (3-pass)")
-        self.chk_shred.setChecked(True)
-        self.chk_pqc = QCheckBox("Quantum-Resistant Layer")
+        # Mode Selector
+        cl.addWidget(QLabel("Mode:", styleSheet="color: gray;"))
+        self.crypto_mode = QComboBox()
+        self.crypto_mode.addItems(
+            ["Standard (ChaCha20)", "Quantum-Resistant (PQC)", "2FA Protected"]
+        )
+        cl.addWidget(self.crypto_mode)
 
-        conf.addWidget(self.chk_shred)
-        conf.addWidget(self.chk_pqc)
-        conf.addStretch()
-        l.addLayout(conf)
+        # Options
+        cl.addSpacing(10)
+        cl.addWidget(QLabel("Options:", styleSheet="color: gray;"))
+        self.chk_shred = QCheckBox("Secure Shred Original")
+        self.chk_shred.setChecked(True)
+        self.chk_shred.setStyleSheet("color: white;")
+        cl.addWidget(self.chk_shred)
+
+        self.chk_compress = QCheckBox("Compress Before Encrypt")
+        self.chk_compress.setStyleSheet("color: white;")
+        cl.addWidget(self.chk_compress)
+
+        cl.addStretch()
+
+        # File Stats
+        cl.addWidget(
+            QLabel("Statistics:", styleSheet="color: gray; font-weight: bold;")
+        )
+        self.lbl_file_count = QLabel("Files: 0")
+        self.lbl_file_count.setStyleSheet("color: #00e676; font-family: Consolas;")
+        cl.addWidget(self.lbl_file_count)
+
+        self.lbl_total_size = QLabel("Total: 0 KB")
+        self.lbl_total_size.setStyleSheet("color: #7f5af0; font-family: Consolas;")
+        cl.addWidget(self.lbl_total_size)
+
+        grid.addWidget(config_card, 0, 0, 2, 1)
+
+        # Right Panel: File List
+        file_card = QFrame(objectName="Card")
+        file_card.setStyleSheet(
+            f"QFrame#Card {{ background-color: {CARD_COLOR}; border-radius: 16px; border: 1px solid #27272a; }}"
+        )
+        fcl = QVBoxLayout(file_card)
+
+        fcl.addWidget(
+            QLabel(
+                "File Queue",
+                styleSheet="font-weight: bold; color: gray; font-size: 16px;",
+            )
+        )
 
         self.file_list = QListWidget()
         self.file_list.setAcceptDrops(True)
         self.file_list.dragEnterEvent = lambda e: e.accept()
         self.file_list.dragMoveEvent = lambda e: e.accept()
         self.file_list.dropEvent = self.on_drop
-        self.file_list.setToolTip("Drag files here")
-        self.file_list.setStyleSheet("border: 2px dashed #3f3f46; background: #141417;")
-        l.addWidget(self.file_list)
+        self.file_list.setToolTip("Drag & drop files here")
+        self.file_list.setStyleSheet(
+            "border: 2px dashed #3f3f46; background: #18181b; color: white; padding: 10px;"
+        )
+        self.file_list.itemSelectionChanged.connect(self.update_file_stats)
+        fcl.addWidget(self.file_list)
 
-        acts = QHBoxLayout()
+        # File Actions
+        file_acts = QHBoxLayout()
         b_add = QPushButton(" Add Files")
+        b_add.setIcon(qta.icon("fa5s.plus", color="white"))
         b_add.clicked.connect(self.add_files)
-        b_enc = QPushButton(" ENCRYPT ALL", objectName="Danger")
+
+        b_remove = QPushButton(" Remove")
+        b_remove.setIcon(qta.icon("fa5s.trash", color="white"))
+        b_remove.clicked.connect(self.remove_selected_files)
+
+        b_clear = QPushButton(" Clear All")
+        b_clear.clicked.connect(self.file_list.clear)
+
+        file_acts.addWidget(b_add)
+        file_acts.addWidget(b_remove)
+        file_acts.addStretch()
+        file_acts.addWidget(b_clear)
+        fcl.addLayout(file_acts)
+
+        grid.addWidget(file_card, 0, 1, 2, 1)
+
+        l.addLayout(grid)
+        l.addSpacing(20)
+
+        # Action Buttons
+        action_row = QHBoxLayout()
+
+        b_enc = QPushButton(" ENCRYPT ALL", objectName="Primary")
+        b_enc.setIcon(qta.icon("fa5s.lock", color="black"))
+        b_enc.setFixedHeight(50)
         b_enc.clicked.connect(self.run_encrypt)
-        b_dec = QPushButton(" DECRYPT ALL", objectName="Primary")
+
+        b_dec = QPushButton(" DECRYPT ALL")
+        b_dec.setIcon(qta.icon("fa5s.unlock", color="white"))
+        b_dec.setFixedHeight(50)
+        b_dec.setStyleSheet(
+            "background-color: #7f5af0; color: white; border-radius: 8px; font-weight: bold;"
+        )
         b_dec.clicked.connect(self.run_decrypt)
 
-        acts.addWidget(b_add)
-        acts.addStretch()
-        acts.addWidget(b_enc)
-        acts.addWidget(b_dec)
-        l.addLayout(acts)
+        action_row.addWidget(b_enc)
+        action_row.addWidget(b_dec)
+        l.addLayout(action_row)
 
+        l.addStretch()
         return p
 
     def tab_settings(self):
@@ -1024,7 +1418,14 @@ class NDSFC_Pro(QMainWindow):
         fl.setContentsMargins(30, 30, 30, 30)
 
         self.set_algo = QComboBox()
-        self.set_algo.addItems(["ChaCha20-Poly1305 (Fast)", "AES-256-GCM (Standard)"])
+        self.set_algo.addItems(
+            [
+                "ChaCha20-Poly1305 (Standard)",
+                "AES-256-GCM (Balanced)",
+                "Quantum-Resistant (PQC Cascade)",
+                "2FA Protected (Answer Required)",
+            ]
+        )
 
         self.set_shred = QSpinBox()
         self.set_shred.setRange(1, 35)
@@ -1099,6 +1500,34 @@ class NDSFC_Pro(QMainWindow):
         fs, _ = QFileDialog.getOpenFileNames(self, "Select Files")
         for f in fs:
             self.file_list.addItem(f)
+        self.update_file_stats()
+
+    def remove_selected_files(self):
+        for item in self.file_list.selectedItems():
+            self.file_list.takeItem(self.file_list.row(item))
+        self.update_file_stats()
+
+    def update_file_stats(self):
+        count = self.file_list.count()
+        total_size = 0
+
+        for i in range(count):
+            path = self.file_list.item(i).text()
+            if os.path.exists(path):
+                total_size += os.path.getsize(path)
+
+        self.lbl_file_count.setText(f"Files: {count}")
+
+        if total_size < 1024:
+            size_str = f"{total_size} B"
+        elif total_size < 1024 * 1024:
+            size_str = f"{total_size / 1024:.2f} KB"
+        elif total_size < 1024 * 1024 * 1024:
+            size_str = f"{total_size / (1024 * 1024):.2f} MB"
+        else:
+            size_str = f"{total_size / (1024 * 1024 * 1024):.2f} GB"
+
+        self.lbl_total_size.setText(f"Total: {size_str}")
 
     def do_login(self):
         vault_name = self.cb_vaults.currentText()
@@ -1127,9 +1556,16 @@ class NDSFC_Pro(QMainWindow):
     def run_encrypt(self):
         files = [self.file_list.item(i).text() for i in range(self.file_list.count())]
         if not files:
+            QMessageBox.warning(self, "No Files", "Please add files to encrypt.")
             return
 
-        mode = "pqc" if self.chk_pqc.isChecked() else "standard"
+        # Map UI selection to mode
+        mode_map = {
+            "Standard (ChaCha20)": "standard",
+            "Quantum-Resistant (PQC)": "pqc",
+            "2FA Protected": "2fa",
+        }
+        mode = mode_map.get(self.crypto_mode.currentText(), "standard")
         pwd = self.in_pass.text()  # Using login pass for demo
 
         self.worker = TaskWorker(self._encrypt_task, files, pwd, mode)
