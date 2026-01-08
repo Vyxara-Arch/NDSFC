@@ -49,7 +49,7 @@ class CryptoEngine:
             cipher1 = AES.new(key, AES.MODE_GCM)
             temp_cipher, tag1 = cipher1.encrypt_and_digest(plaintext)
 
-            # Layer 2: ChaCha20 (на производном ключе)
+            # Layer 2: ChaCha20
             key2 = hashlib.sha256(key).digest()  # Changed Key for second Layer
             cipher2 = ChaCha20_Poly1305.new(key=key2)
             final_cipher, tag2 = cipher2.encrypt_and_digest(
@@ -171,4 +171,5 @@ class CryptoEngine:
             q_len = struct.unpack(">I", f.read(4))[0]
             question = f.read(q_len).decode("utf-8")
             return question
+
 
