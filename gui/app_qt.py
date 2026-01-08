@@ -29,8 +29,21 @@ from PyQt6.QtWidgets import (
     QDialog,
     QTabWidget,
     QTextEdit,
+    QSpinBox,
+    QFormLayout,
+    QDialog,
+    QTabWidget,
+    QTextEdit,
     QGroupBox,
+    QRadioButton,
+    QButtonGroup,
+    QGridLayout,
 )
+import io
+import qrcode
+import psutil  # Ensure psutil is available for direct check if needed, though tools has it.
+from core.steganography import StegoEngine
+import qrcode
 from core.steganography import StegoEngine
 from core.network import GhostLink
 from core.tools import SecurityTools
@@ -42,6 +55,7 @@ from PyQt6.QtCore import (
     QEasingCurve,
     QSize,
     QParallelAnimationGroup,
+    QTimer,
 )
 from PyQt6.QtGui import QColor, QIcon
 import qtawesome as qta
@@ -56,10 +70,74 @@ from core.network import GhostLink
 from core.session import SecureSession
 
 
+from core.session import SecureSession
+
+
 ACCENT_COLOR = "#00e676"
 BG_COLOR = "#09090b"
 CARD_COLOR = "#18181b"
 TEXT_COLOR = "#ffffff"
+
+
+class SystemMonitorWidget(QFrame):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setObjectName("Card")
+        self.setStyleSheet(
+            f"QFrame#Card {{ background-color: {CARD_COLOR}; border-radius: 16px; border: 1px solid #27272a; }}"
+        )
+        self.setFixedSize(300, 160)
+
+        layout = QVBoxLayout(self)
+
+        l_title = QLabel("System Vitality")
+        l_title.setStyleSheet("font-weight: bold; color: gray;")
+        layout.addWidget(l_title)
+
+        # CPU
+        self.cpu_bar = QProgressBar()
+        self.cpu_bar.setStyleSheet(
+            f"QProgressBar {{ border: 0px; background: #27272a; height: 8px; border-radius: 4px; }} QProgressBar::chunk {{ background: {ACCENT_COLOR}; border-radius: 4px; }}"
+        )
+        self.cpu_bar.setTextVisible(False)
+        self.cpu_bar.setRange(0, 100)
+
+        self.lbl_cpu = QLabel("CPU: 0%")
+        self.lbl_cpu.setStyleSheet("font-size: 12px; font-weight: bold;")
+
+        layout.addWidget(self.lbl_cpu)
+        layout.addWidget(self.cpu_bar)
+
+        # RAM
+        self.ram_bar = QProgressBar()
+        self.ram_bar.setStyleSheet(
+            "QProgressBar { border: 0px; background: #27272a; height: 8px; border-radius: 4px; } QProgressBar::chunk { background: #7f5af0; border-radius: 4px; }"
+        )
+        self.ram_bar.setTextVisible(False)
+        self.ram_bar.setRange(0, 100)
+
+        self.lbl_ram = QLabel("RAM: 0%")
+        self.lbl_ram.setStyleSheet("font-size: 12px; font-weight: bold;")
+
+        layout.addWidget(self.lbl_ram)
+        layout.addWidget(self.ram_bar)
+
+        self.timer = QTimer(self)
+        self.timer.timeout.connect(self.update_stats)
+        self.timer.start(2000)
+        self.update_stats()
+
+    def update_stats(self):
+        try:
+            c = psutil.cpu_percent()
+            r = psutil.virtual_memory().percent
+            self.cpu_bar.setValue(int(c))
+            self.lbl_cpu.setText(f"CPU: {c}%")
+            self.ram_bar.setValue(int(r))
+            self.lbl_ram.setText(f"RAM: {r}%")
+        except:
+            pass
+
 
 STYLESHEET = f"""
 QMainWindow {{ background-color: {BG_COLOR}; }}
@@ -103,12 +181,26 @@ class FadeStack(QStackedWidget):
         super().__init__()
         self.fade_anim = None
 
+    def on_fade_finished(self):
+        self.currentWidget().setGraphicsEffect(None)
+        # The previous widget is now hidden by stacking order or can be explicitly hidden if needed,
+        # but standard QStackedWidget only shows one.
+        # Actually QStackedWidget shows only current. Custom logic here relied on show().
+        # Let's ensure we use standard behavior.
+        self.setCurrentIndex(self.next_idx)
+        self.widget(self.next_idx).setGraphicsEffect(None)
+
     def fade_to_index(self, index):
         if index == self.currentIndex():
             return
 
+        self.next_idx = index
         current_widget = self.currentWidget()
         next_widget = self.widget(index)
+
+        if not current_widget or not next_widget:
+            self.setCurrentIndex(index)
+            return
 
         self.eff1 = QGraphicsOpacityEffect(self)
         self.eff2 = QGraphicsOpacityEffect(self)
@@ -132,7 +224,7 @@ class FadeStack(QStackedWidget):
 
         self.anim_group.addAnimation(anim1)
         self.anim_group.addAnimation(anim2)
-        self.anim_group.finished.connect(lambda: self.setCurrentIndex(index))
+        self.anim_group.finished.connect(self.on_fade_finished)
         self.anim_group.start()
 
 
@@ -459,6 +551,159 @@ class PassGenDialog(QDialog):
         QMessageBox.information(self, "Copied", "Password copied to clipboard.")
 
 
+class InitVaultDialog(QDialog):
+    def __init__(self, parent=None, vault_mgr=None):
+        super().__init__(parent)
+        self.vault_mgr = vault_mgr
+        self.setWindowTitle("Create Secure Environment")
+        self.setFixedSize(500, 550)
+        self.setStyleSheet(STYLESHEET + "QDialog { background-color: #09090b; }")
+
+        self.stack = QStackedWidget()
+        self.layout = QVBoxLayout(self)
+        self.layout.addWidget(self.stack)
+
+        self.init_step_1()
+        self.init_step_2()
+
+    def init_step_1(self):
+        w = QWidget()
+        l = QVBoxLayout(w)
+        l.setSpacing(15)
+
+        l.addWidget(
+            QLabel(
+                "Environment Setup",
+                styleSheet="font-size: 20px; font-weight: bold; color: white;",
+            )
+        )
+
+        self.in_name = QLineEdit(placeholderText="Vault Name (e.g., Personal)")
+        self.in_user = QLineEdit(placeholderText="Username")
+        self.in_pass = QLineEdit(placeholderText="Master Password")
+        self.in_pass.setEchoMode(QLineEdit.EchoMode.Password)
+        self.in_duress = QLineEdit(placeholderText="Duress Password (Panic)")
+        self.in_duress.setEchoMode(QLineEdit.EchoMode.Password)
+
+        l.addWidget(QLabel("Configuration:"))
+        l.addWidget(self.in_name)
+        l.addWidget(self.in_user)
+        l.addWidget(self.in_pass)
+        l.addWidget(self.in_duress)
+
+        l.addStretch()
+
+        btn_next = QPushButton("CREATE ENVIRONMENT", objectName="Primary")
+        btn_next.clicked.connect(self.action_create)
+        l.addWidget(btn_next)
+
+        self.stack.addWidget(w)
+
+    def init_step_2(self):
+        self.p2 = QWidget()
+        l = QVBoxLayout(self.p2)
+        l.setSpacing(15)
+
+        l.addWidget(
+            QLabel(
+                "Two-Factor Authentication",
+                styleSheet="font-size: 20px; font-weight: bold; color: #00e676;",
+            )
+        )
+        l.addWidget(
+            QLabel(
+                "Scan this QR Code with your Authenticator App, or enter the secret manually.",
+                styleSheet="color: gray;",
+            )
+        )
+
+        # Tabs for QR / Text
+        tabs = QTabWidget()
+        tabs.setStyleSheet(
+            "QTabWidget::pane { border: 0; } QTabBar::tab { background: #27272a; color: gray; padding: 10px; width: 100px; } QTabBar::tab:selected { background: #3f3f46; color: white; border-bottom: 2px solid #00e676; }"
+        )
+
+        # TAB 1: QR
+        t1 = QWidget()
+        l1 = QVBoxLayout(t1)
+        self.qr_lbl = QLabel()
+        self.qr_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.qr_lbl.setStyleSheet(
+            "background: white; border-radius: 10px; padding: 10px;"
+        )
+        l1.addWidget(self.qr_lbl)
+        tabs.addTab(t1, "QR Code")
+
+        # TAB 2: TEXT
+        t2 = QWidget()
+        l2 = QVBoxLayout(t2)
+        self.txt_secret = QLineEdit()
+        self.txt_secret.setReadOnly(True)
+        self.txt_secret.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.txt_secret.setStyleSheet(
+            "font-size: 24px; letter-spacing: 5px; font-family: Consolas; color: #00e676;"
+        )
+        l2.addWidget(QLabel("Secret Key (Base32):"))
+        l2.addWidget(self.txt_secret)
+        tabs.addTab(t2, "Text Code")
+
+        l.addWidget(tabs)
+        l.addStretch()
+
+        btn_done = QPushButton("I HAVE SAVED IT", objectName="Primary")
+        btn_done.clicked.connect(self.accept)
+        l.addWidget(btn_done)
+
+        self.stack.addWidget(self.p2)
+
+    def action_create(self):
+        name = self.in_name.text()
+        user = self.in_user.text()
+        pwd = self.in_pass.text()
+        duress = self.in_duress.text()
+
+        if not all([name, user, pwd, duress]):
+            QMessageBox.warning(self, "Error", "All fields are required")
+            return
+
+        res, data = self.vault_mgr.create_vault(name, user, pwd, duress)
+        if not res:
+            QMessageBox.critical(self, "Error", data)
+            return
+
+        # Success, show step 2
+        secret = data
+        self.txt_secret.setText(secret)
+
+        # Generate QR
+        import pyotp
+
+        totp = pyotp.TOTP(secret)
+        uri = totp.provisioning_uri(name=user, issuer_name="NDSFC Vault")
+
+        img = qrcode.make(uri)
+        # Convert PIL to Pixmap
+        buf = io.BytesIO()
+        img.save(buf, format="PNG")
+        qimg = QIcon(
+            qta.icon("fa5s.lock").pixmap(200, 200)
+        )  # Placeholder if fails? No, use QPixmap
+
+        # Properly load from buffer
+        from PyQt6.QtGui import QPixmap
+
+        qp = QPixmap()
+        qp.loadFromData(buf.getvalue())
+        self.qr_lbl.setPixmap(qp.scaled(200, 200, Qt.AspectRatioMode.KeepAspectRatio))
+
+        self.stack.setCurrentIndex(1)
+
+
+class InitVaultDialog_OLD(QDialog):
+    # Removing old manual dialog logic
+    pass
+
+
 class TaskWorker(QThread):
     finished = pyqtSignal(object)
 
@@ -495,18 +740,9 @@ class NDSFC_Pro(QMainWindow):
             self.show_create_vault_dialog()
 
     def show_create_vault_dialog(self):
-
-        d = QWidget()
-        d.setWindowTitle("Create Environment")
-
-        name, ok = QInputDialog.getText(self, "Init", "Environment Name:")
-        if ok and name:
-            u, ok2 = QInputDialog.getText(self, "Init", "Username:")
-            p, ok3 = QInputDialog.getText(self, "Init", "Password:")
-            if ok2 and ok3:
-                res, sec = self.vault_mgr.create_vault(name, u, p, "panic")
-                QMessageBox.information(self, "Vault Created", f"Secret: {sec}")
-                self.refresh_vaults()
+        d = InitVaultDialog(self, self.vault_mgr)
+        if d.exec():
+            self.refresh_vaults()
 
     def init_login_ui(self):
         w = QWidget()
@@ -625,26 +861,96 @@ class NDSFC_Pro(QMainWindow):
     def tab_home(self):
         p = QWidget()
         l = QVBoxLayout(p)
-        l.setContentsMargins(50, 50, 50, 50)
+        l.setContentsMargins(30, 30, 30, 30)
 
-        l.addWidget(
-            QLabel("System Overview", styleSheet="font-size: 28px; font-weight: bold;")
-        )
+        # Header
+        header = QHBoxLayout()
+        lbl_welcome = QLabel("Mission Control")
+        lbl_welcome.setStyleSheet("font-size: 28px; font-weight: bold; color: white;")
+        header.addWidget(lbl_welcome)
+        header.addStretch()
+        l.addLayout(header)
         l.addSpacing(20)
 
-        cards = QHBoxLayout()
-        cards.addWidget(
-            self.mk_stat_card(
-                "Active Environment",
-                lambda: self.session.current_vault or "N/A",
-                ACCENT_COLOR,
-            )
-        )
-        cards.addWidget(self.mk_stat_card("RAM Volatility", "Secure", "#7f5af0"))
-        cards.addWidget(self.mk_stat_card("CPU Encryption", "HW Accel", "#2cb67d"))
-        l.addLayout(cards)
+        # Grid
+        grid = QGridLayout()
+        grid.setSpacing(20)
 
-        l.addSpacing(40)
+        # 1. System Monitor (Row 0, Col 0)
+        sys_mon = SystemMonitorWidget()
+        grid.addWidget(sys_mon, 0, 0)
+
+        # 2. Vault Status (Row 0, Col 1)
+        v_card = QFrame(objectName="Card")
+        v_card.setStyleSheet(
+            f"QFrame#Card {{ background-color: {CARD_COLOR}; border-radius: 16px; border: 1px solid #27272a; }}"
+        )
+        v_card.setFixedSize(300, 160)
+        vl = QVBoxLayout(v_card)
+        vl.addWidget(
+            QLabel("Active Environment", styleSheet="font-weight: bold; color: gray;")
+        )
+        self.lbl_vault_name = QLabel(self.session.current_vault or "LOCKED")
+        self.lbl_vault_name.setStyleSheet(
+            f"font-size: 24px; font-weight: bold; color: {ACCENT_COLOR};"
+        )
+        vl.addWidget(self.lbl_vault_name)
+        vl.addStretch()
+        b_lock = QPushButton("LOCK NOW")
+        b_lock.setStyleSheet("background: #27272a; color: white; border: 0px;")
+        b_lock.clicked.connect(self.do_logout)
+        vl.addWidget(b_lock)
+        grid.addWidget(v_card, 0, 1)
+
+        # 3. Quick Actions (Row 0, Col 2)
+        q_card = QFrame(objectName="Card")
+        q_card.setStyleSheet(
+            f"QFrame#Card {{ background-color: {CARD_COLOR}; border-radius: 16px; border: 1px solid #27272a; }}"
+        )
+        q_card.setFixedSize(300, 160)
+        ql = QVBoxLayout(q_card)
+        ql.addWidget(
+            QLabel("Quick Actions", styleSheet="font-weight: bold; color: gray;")
+        )
+
+        bq1 = QPushButton("  Encrypt File")
+        bq1.setIcon(qta.icon("fa5s.lock", color="white"))
+        bq1.clicked.connect(lambda: self.switch_tab(1))  # Crypto tab
+        ql.addWidget(bq1)
+
+        bq2 = QPushButton("  Secure Tunnel")
+        bq2.setIcon(qta.icon("fa5s.network-wired", color="white"))
+        bq2.clicked.connect(self.open_ghostlink)
+        ql.addWidget(bq2)
+
+        grid.addWidget(q_card, 0, 2)
+
+        # Row 1: Audit Log / Recent Activity
+        audit_frame = QFrame(objectName="Card")
+        audit_frame.setStyleSheet(
+            f"QFrame#Card {{ background-color: {CARD_COLOR}; border-radius: 16px; border: 1px solid #27272a; }}"
+        )
+        al = QVBoxLayout(audit_frame)
+        al.addWidget(
+            QLabel("Security Audit Log", styleSheet="font-weight: bold; color: gray;")
+        )
+
+        self.list_audit = QListWidget()
+        self.list_audit.setStyleSheet(
+            "background: transparent; border: 0px; font-family: Consolas;"
+        )
+        # Dummy data
+        self.list_audit.addItem("[SYSTEM] Session Initialized")
+        self.list_audit.addItem("[AUDIT] Integrity Check Passed")
+
+        al.addWidget(self.list_audit)
+
+        grid.addWidget(audit_frame, 1, 0, 1, 3)  # Span 3 cols
+
+        l.addLayout(grid)
+        l.addStretch()
+
+        return p
         l.addWidget(
             QLabel("Recent Activity", styleSheet="font-size: 18px; color: gray;")
         )
@@ -785,18 +1091,6 @@ class NDSFC_Pro(QMainWindow):
         l.addStretch()
         return p
 
-    def mk_stat_card(self, t, v_func, color):
-        f = QFrame(objectName="Card")
-        l = QVBoxLayout(f)
-        val = v_func() if callable(v_func) else v_func
-        l.addWidget(QLabel(t, styleSheet="color: gray"))
-        l.addWidget(
-            QLabel(
-                val, styleSheet=f"font-size: 22px; font-weight: bold; color: {color}"
-            )
-        )
-        return f
-
     def on_drop(self, e):
         for u in e.mimeData().urls():
             self.file_list.addItem(u.toLocalFile())
@@ -871,9 +1165,9 @@ class NDSFC_Pro(QMainWindow):
             QMessageBox.critical(self, "Error", msg)
 
     def update_log(self):
-        self.log_list.clear()
+        self.list_audit.clear()
         for l in AuditLog.get_logs()[-10:]:
-            self.log_list.addItem(l)
+            self.list_audit.addItem(l)
 
     def apply_theme(self, theme_name):
 

@@ -7,7 +7,17 @@ class GhostLink:
     def __init__(self):
         self.client = paramiko.SSHClient()
         self.client.load_system_host_keys()
-        self.client.load_host_keys(paramiko.util.load_host_keys_filename())
+        self.client.load_system_host_keys()
+
+        # Helper to load user host keys safely
+        import os
+
+        known_hosts = os.path.expanduser("~/.ssh/known_hosts")
+        if os.path.exists(known_hosts):
+            try:
+                self.client.load_host_keys(known_hosts)
+            except:
+                pass
         self.sftp = None
         self.transport = None
 
@@ -58,5 +68,3 @@ class GhostLink:
         if self.sftp:
             self.sftp.close()
         self.client.close()
-
-
