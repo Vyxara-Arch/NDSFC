@@ -21,8 +21,13 @@ from PyQt6.QtWidgets import (
     QInputDialog,
     QGraphicsOpacityEffect,
     QSpinBox,
+    QSpinBox,
     QFormLayout,
+    QDialog,
+    QTabWidget,
+    QTextEdit,
 )
+from core.steganography import StegoEngine
 from PyQt6.QtCore import (
     Qt,
     QThread,
@@ -45,7 +50,7 @@ from core.network import GhostLink
 from core.session import SecureSession
 
 
-ACCENT_COLOR = "#00e676" 
+ACCENT_COLOR = "#00e676"
 BG_COLOR = "#09090b"
 CARD_COLOR = "#18181b"
 TEXT_COLOR = "#ffffff"
@@ -85,7 +90,6 @@ QPushButton#Danger {{
 """
 
 
-
 class FadeStack(QStackedWidget):
     """Custom Stacked Widget with Fade Animation"""
 
@@ -99,7 +103,6 @@ class FadeStack(QStackedWidget):
 
         current_widget = self.currentWidget()
         next_widget = self.widget(index)
-
 
         self.eff1 = QGraphicsOpacityEffect(self)
         self.eff2 = QGraphicsOpacityEffect(self)
@@ -127,6 +130,157 @@ class FadeStack(QStackedWidget):
         self.anim_group.start()
 
 
+class StartStegoDialog(QDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Omega Steganography Tool")
+        self.setFixedSize(600, 500)
+        self.setStyleSheet(STYLESHEET + "QDialog { background-color: #09090b; }")
+
+        layout = QVBoxLayout(self)
+
+        self.tabs = QTabWidget()
+        self.tabs.setStyleSheet(
+            "QTabWidget::pane { border: 0; } QTabBar::tab { background: #27272a; color: gray; padding: 10px; } QTabBar::tab:selected { background: #00e676; color: black; }"
+        )
+
+        self.tab_enc = self.init_enc_tab()
+        self.tab_dec = self.init_dec_tab()
+
+        self.tabs.addTab(self.tab_enc, "Hide Data")
+        self.tabs.addTab(self.tab_dec, "Extract Data")
+
+        layout.addWidget(self.tabs)
+
+    def init_enc_tab(self):
+        w = QWidget()
+        l = QVBoxLayout(w)
+
+        # Cover Image
+        self.lbl_cover = QLabel("No Cover Image Selected")
+        self.lbl_cover.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.lbl_cover.setStyleSheet(
+            "border: 2px dashed #3f3f46; padding: 20px; color: gray;"
+        )
+        l.addWidget(self.lbl_cover)
+
+        b_sel = QPushButton("Select Cover Image (PNG)")
+        b_sel.clicked.connect(self.sel_cover)
+        l.addWidget(b_sel)
+
+        self.lbl_cap = QLabel("Capacity: 0 bytes")
+        self.lbl_cap.setStyleSheet("color: #00e676; font-weight: bold;")
+        l.addWidget(self.lbl_cap)
+        l.addSpacing(10)
+
+        # Payload
+        self.in_payload = QLineEdit(placeholderText="Path to secret file...")
+        self.in_payload.setReadOnly(True)
+        l.addWidget(self.in_payload)
+
+        b_pay = QPushButton("Select Secret File")
+        b_pay.clicked.connect(self.sel_payload)
+        l.addWidget(b_pay)
+
+        l.addStretch()
+
+        b_run = QPushButton("ENCODE & SAVE", objectName="Primary")
+        b_run.clicked.connect(self.run_encode)
+        l.addWidget(b_run)
+
+        self.cover_path = None
+        self.payload_path = None
+
+        return w
+
+    def init_dec_tab(self):
+        w = QWidget()
+        l = QVBoxLayout(w)
+
+        self.lbl_stego = QLabel("No Stego Image Selected")
+        self.lbl_stego.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.lbl_stego.setStyleSheet(
+            "border: 2px dashed #3f3f46; padding: 20px; color: gray;"
+        )
+        l.addWidget(self.lbl_stego)
+
+        b_sel = QPushButton("Select Stego Image")
+        b_sel.clicked.connect(self.sel_stego)
+        l.addWidget(b_sel)
+
+        l.addStretch()
+
+        b_run = QPushButton("EXTRACT DATA", objectName="Primary")
+        b_run.clicked.connect(self.run_decode)
+        l.addWidget(b_run)
+
+        self.stego_path = None
+        return w
+
+    def sel_cover(self):
+        f, _ = QFileDialog.getOpenFileName(
+            self, "Select Cover", "", "Images (*.png *.jpg *.jpeg)"
+        )
+        if f:
+            self.cover_path = f
+            self.lbl_cover.setText(os.path.basename(f))
+            cap = StegoEngine.get_capacity(f)
+            self.lbl_cap.setText(f"Capacity: {cap} bytes")
+
+    def sel_payload(self):
+        f, _ = QFileDialog.getOpenFileName(self, "Select Secret File")
+        if f:
+            self.payload_path = f
+            self.in_payload.setText(f)
+
+    def run_encode(self):
+        if not self.cover_path or not self.payload_path:
+            QMessageBox.warning(
+                self, "Error", "Select both cover image and secret file."
+            )
+            return
+
+        out, _ = QFileDialog.getSaveFileName(
+            self, "Save Stego Image", "", "PNG Image (*.png)"
+        )
+        if not out:
+            return
+
+        try:
+            StegoEngine.encode(self.cover_path, self.payload_path, out)
+            QMessageBox.information(self, "Success", f"Data hidden in {out}")
+            self.close()
+        except Exception as e:
+            QMessageBox.critical(self, "Error", str(e))
+
+    def sel_stego(self):
+        f, _ = QFileDialog.getOpenFileName(
+            self, "Select Stego Image", "", "PNG Image (*.png)"
+        )
+        if f:
+            self.stego_path = f
+            self.lbl_stego.setText(os.path.basename(f))
+
+    def run_decode(self):
+        if not self.stego_path:
+            QMessageBox.warning(self, "Error", "Select stego image.")
+            return
+
+        out, _ = QFileDialog.getSaveFileName(
+            self, "Extract Secret To...", "", "All Files (*.*)"
+        )
+        if not out:
+            return
+
+        try:
+            size_out = StegoEngine.decode(self.stego_path, out)
+            QMessageBox.information(
+                self, "Success", f"Extracted {size_out} bytes to {out}"
+            )
+            self.close()
+        except Exception as e:
+            QMessageBox.critical(self, "Error", str(e))
+
 
 class TaskWorker(QThread):
     finished = pyqtSignal(object)
@@ -143,7 +297,6 @@ class TaskWorker(QThread):
             self.finished.emit((False, str(e)))
 
 
-
 class NDSFC_Pro(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -155,13 +308,11 @@ class NDSFC_Pro(QMainWindow):
         self.auth = AuthManager()
         self.session = SecureSession()
 
-
         self.main_stack = FadeStack()
         self.setCentralWidget(self.main_stack)
 
         self.init_login_ui()
         self.init_dashboard_ui()
-
 
         if not self.vault_mgr.list_vaults():
             self.show_create_vault_dialog()
@@ -180,7 +331,6 @@ class NDSFC_Pro(QMainWindow):
                 QMessageBox.information(self, "Vault Created", f"Secret: {sec}")
                 self.refresh_vaults()
 
-
     def init_login_ui(self):
         w = QWidget()
         layout = QVBoxLayout(w)
@@ -191,7 +341,6 @@ class NDSFC_Pro(QMainWindow):
         cl = QVBoxLayout(card)
         cl.setContentsMargins(40, 40, 40, 40)
         cl.setSpacing(20)
-
 
         icon_lbl = QLabel()
         icon_lbl.setPixmap(
@@ -243,13 +392,11 @@ class NDSFC_Pro(QMainWindow):
         self.cb_vaults.clear()
         self.cb_vaults.addItems(self.vault_mgr.list_vaults())
 
-
     def init_dashboard_ui(self):
         w = QWidget()
         row = QHBoxLayout(w)
         row.setContentsMargins(0, 0, 0, 0)
         row.setSpacing(0)
-
 
         sidebar = QFrame(objectName="Sidebar")
         sidebar.setFixedWidth(280)
@@ -265,7 +412,6 @@ class NDSFC_Pro(QMainWindow):
         sb_l.addSpacing(40)
 
         self.dash_stack = FadeStack()
-
 
         btns = [
             ("Dashboard", "fa5s.chart-pie", 0),
@@ -287,7 +433,6 @@ class NDSFC_Pro(QMainWindow):
         b_out.clicked.connect(self.do_logout)
         sb_l.addWidget(b_out)
 
-
         self.dash_stack.addWidget(self.tab_home())
         self.dash_stack.addWidget(self.tab_crypto())
         self.dash_stack.addWidget(self.tab_omega())
@@ -299,8 +444,6 @@ class NDSFC_Pro(QMainWindow):
 
     def switch_tab(self, idx):
         self.dash_stack.fade_to_index(idx)
-
-
 
     def tab_home(self):
         p = QWidget()
@@ -347,7 +490,6 @@ class NDSFC_Pro(QMainWindow):
             )
         )
 
-
         conf = QHBoxLayout()
         self.chk_shred = QCheckBox("Secure Shred (3-pass)")
         self.chk_shred.setChecked(True)
@@ -358,7 +500,6 @@ class NDSFC_Pro(QMainWindow):
         conf.addStretch()
         l.addLayout(conf)
 
-
         self.file_list = QListWidget()
         self.file_list.setAcceptDrops(True)
         self.file_list.dragEnterEvent = lambda e: e.accept()
@@ -367,7 +508,6 @@ class NDSFC_Pro(QMainWindow):
         self.file_list.setToolTip("Drag files here")
         self.file_list.setStyleSheet("border: 2px dashed #3f3f46; background: #141417;")
         l.addWidget(self.file_list)
-
 
         acts = QHBoxLayout()
         b_add = QPushButton(" Add Files")
@@ -440,11 +580,8 @@ class NDSFC_Pro(QMainWindow):
         )
         l1.addWidget(QLabel("Hide encrypted archives inside PNG."))
         b1 = QPushButton("Launch Tool")
-        b1.clicked.connect(
-            lambda: QMessageBox.information(self, "Info", "Select Cover Image...")
-        )
+        b1.clicked.connect(self.open_stego_tool)
         l1.addWidget(b1)
-
 
         c2 = QFrame(objectName="Card")
         l2 = QVBoxLayout(c2)
@@ -460,7 +597,6 @@ class NDSFC_Pro(QMainWindow):
         l.addLayout(grid)
         l.addStretch()
         return p
-
 
     def mk_stat_card(self, t, v_func, color):
         f = QFrame(objectName="Card")
@@ -482,7 +618,6 @@ class NDSFC_Pro(QMainWindow):
         fs, _ = QFileDialog.getOpenFileNames(self, "Select Files")
         for f in fs:
             self.file_list.addItem(f)
-
 
     def do_login(self):
         vault_name = self.cb_vaults.currentText()
@@ -579,9 +714,16 @@ class NDSFC_Pro(QMainWindow):
         shred = self.set_shred.value()
         theme = self.set_theme.currentText()
 
-        self.auth.update_setting("algo", algo)
-        self.auth.update_setting("shred", shred)
-        self.auth.update_setting("theme", theme)
+        pwd = self.in_pass.text()
+        if not pwd:
+            QMessageBox.warning(
+                self, "Error", "Password required to update settings (Session Expired?)"
+            )
+            return
+
+        self.auth.update_setting("algo", algo, pwd)
+        self.auth.update_setting("shred", shred, pwd)
+        self.auth.update_setting("theme", theme, pwd)
 
         self.apply_theme(theme)
 
@@ -594,10 +736,15 @@ class NDSFC_Pro(QMainWindow):
         if "shred" in s:
             self.set_shred.setValue(s["shred"])
 
+    def open_stego_tool(self):
+        dlg = StartStegoDialog(self)
+        dlg.exec()
+
 
 def main():
     app = QApplication(sys.argv)
     w = NDSFC_Pro()
+    # Apply global font to QDialogs too
+    app.setStyleSheet(STYLESHEET)
     w.show()
     sys.exit(app.exec())
-

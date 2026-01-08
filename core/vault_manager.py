@@ -30,23 +30,36 @@ class VaultManager:
 
         ph = PasswordHasher()
 
+        from core.crypto_engine import CryptoEngine
+
+        totp_secret = pyotp.random_base32()
+
+        # Data to be encrypted
+        sensitive_data = json.dumps(
+            {
+                "totp_secret": totp_secret,
+                "settings": {
+                    "algo": "ChaCha20-Poly1305",
+                    "shred_passes": 1,
+                    "theme_accent": "#00e676",
+                },
+            }
+        ).encode()
+
+        encrypted_blob = CryptoEngine.data_encrypt(sensitive_data, password)
+
+        # Public metadata (hashes are one-way) + Encrypted Blob
         data = {
             "username": username,
             "hash": ph.hash(password),
-            "totp_secret": pyotp.random_base32(),
             "duress_hash": ph.hash(duress_password),
-            "settings": {
-                "algo": "ChaCha20-Poly1305",
-                "shred_passes": 1,
-                "theme_accent": "#00e676",
-            },
+            "vault_data": encrypted_blob,
         }
 
         with open(path, "w") as f:
-            json.dump(data, f)
+            json.dump(data, f, indent=4)
 
-        return True, data["totp_secret"]
+        return True, totp_secret
 
     def get_vault_path(self, name):
         return os.path.join(VAULT_DIR, f"{name}.json")
-

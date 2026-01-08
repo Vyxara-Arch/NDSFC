@@ -14,7 +14,7 @@ class CryptoEngine:
 
     @staticmethod
     def derive_key(password: str, salt: bytes, length=32) -> bytes:
-        # Reinforced KDF 
+        # Reinforced KDF
         return scrypt(password.encode(), salt, length, N=2**15, r=8, p=1)
 
     @staticmethod
@@ -72,7 +72,7 @@ class CryptoEngine:
             nonce = cipher.nonce
             ciphertext, tag = cipher.encrypt_and_digest(plaintext)
 
-            # Sec.Question 
+            # Sec.Question
             q_bytes = sec_q.encode("utf-8")
             q_len = struct.pack(">I", len(q_bytes))
             header.extend(q_len)
@@ -172,4 +172,32 @@ class CryptoEngine:
             question = f.read(q_len).decode("utf-8")
             return question
 
+    @staticmethod
+    def data_encrypt(data: bytes, password: str) -> dict:
+        """Encrypts bytes in memory using ChaCha20-Poly1305. Returns dict with hex-encoded artifacts."""
+        salt = get_random_bytes(16)
+        key = CryptoEngine.derive_key(password, salt)
+        cipher = ChaCha20_Poly1305.new(key=key)
+        ciphertext, tag = cipher.encrypt_and_digest(data)
 
+        return {
+            "salt": salt.hex(),
+            "nonce": cipher.nonce.hex(),
+            "tag": tag.hex(),
+            "ciphertext": ciphertext.hex(),
+        }
+
+    @staticmethod
+    def data_decrypt(enc_dict: dict, password: str) -> bytes:
+        """Decrypts data from dictionary artifacts."""
+        try:
+            salt = bytes.fromhex(enc_dict["salt"])
+            nonce = bytes.fromhex(enc_dict["nonce"])
+            tag = bytes.fromhex(enc_dict["tag"])
+            ciphertext = bytes.fromhex(enc_dict["ciphertext"])
+
+            key = CryptoEngine.derive_key(password, salt)
+            cipher = ChaCha20_Poly1305.new(key=key, nonce=nonce)
+            return cipher.decrypt_and_verify(ciphertext, tag)
+        except (ValueError, KeyError):
+            raise ValueError("Decryption Failed")
