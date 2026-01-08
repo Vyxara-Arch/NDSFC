@@ -22,7 +22,6 @@ class AuthManager:
         with open(self.active_vault_path, "r") as f:
             data = json.load(f)
 
-        # 1. Check Duress
         try:
             self.ph.verify(data["duress_hash"], password)
             self.trigger_panic()
@@ -30,12 +29,9 @@ class AuthManager:
         except:
             pass
 
-        # 2. Normal Login
-        # 2. Normal Login
         try:
             from core.crypto_engine import CryptoEngine
 
-            # Verify Password Hash first (Fast fail)
             self.ph.verify(data["hash"], password)
 
             # Decrypt Vault Data
@@ -48,7 +44,6 @@ class AuthManager:
                 totp_secret = vault_content["totp_secret"]
                 self.settings = vault_content.get("settings", {})
             else:
-                # Legacy Support (Plaintext) - remove after migration if needed
                 totp_secret = data["totp_secret"]
                 self.settings = data.get("settings", {})
 
@@ -68,38 +63,31 @@ class AuthManager:
         from core.crypto_engine import CryptoEngine
         import json
 
-        # 1. Read and Decrypt
         with open(self.active_vault_path, "r") as f:
             data = json.load(f)
 
         if "vault_data" not in data:
-            # Legacy/Broken state
             return
 
         try:
-            # Decrypt existing blob
             decrypted_bytes = CryptoEngine.data_decrypt(data["vault_data"], password)
             vault_content = json.loads(decrypted_bytes)
 
-            # Update Settings
             if "settings" not in vault_content:
                 vault_content["settings"] = {}
 
             vault_content["settings"][key] = value
-            self.settings[key] = value  # Update memory cache
+            self.settings[key] = value
 
-            # Re-encrypt
             new_blob_bytes = json.dumps(vault_content).encode()
             encrypted_blob = CryptoEngine.data_encrypt(new_blob_bytes, password)
 
-            # Save back to file
             data["vault_data"] = encrypted_blob
 
             with open(self.active_vault_path, "w") as f:
                 json.dump(data, f, indent=4)
 
         except Exception as e:
-            # If password is wrong or other error
             print(f"Failed to update settings: {e}")
 
     def trigger_panic(self):

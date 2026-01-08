@@ -24,10 +24,16 @@ from PyQt6.QtWidgets import (
     QSpinBox,
     QFormLayout,
     QDialog,
+    QSpinBox,
+    QFormLayout,
+    QDialog,
     QTabWidget,
     QTextEdit,
+    QGroupBox,
 )
 from core.steganography import StegoEngine
+from core.network import GhostLink
+from core.tools import SecurityTools
 from PyQt6.QtCore import (
     Qt,
     QThread,
@@ -280,6 +286,177 @@ class StartStegoDialog(QDialog):
             self.close()
         except Exception as e:
             QMessageBox.critical(self, "Error", str(e))
+
+
+class GhostLinkDialog(QDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("GhostLink Secure Tunnel (SFTP)")
+        self.setFixedSize(500, 600)
+        self.setStyleSheet(STYLESHEET + "QDialog { background-color: #09090b; }")
+
+        self.link = GhostLink()
+
+        layout = QVBoxLayout(self)
+        layout.setSpacing(15)
+
+        # Connection Details
+        gb_conn = QGroupBox("Connection")
+        gb_conn.setStyleSheet(
+            "QGroupBox { border: 1px solid #3f3f46; margin-top: 10px; padding-top: 10px; font-weight: bold; color: white; }"
+        )
+        l_conn = QFormLayout(gb_conn)
+
+        self.in_host = QLineEdit()
+        self.in_port = QSpinBox()
+        self.in_port.setRange(1, 65535)
+        self.in_port.setValue(22)
+        self.in_user = QLineEdit()
+        self.in_pass = QLineEdit()
+        self.in_pass.setEchoMode(QLineEdit.EchoMode.Password)
+
+        l_conn.addRow("Host:", self.in_host)
+        l_conn.addRow("Port:", self.in_port)
+        l_conn.addRow("Username:", self.in_user)
+        l_conn.addRow("Password:", self.in_pass)
+
+        layout.addWidget(gb_conn)
+
+        # Proxy (Optional)
+        gb_proxy = QGroupBox("SOCKS5 Proxy (Optional)")
+        gb_proxy.setStyleSheet(
+            "QGroupBox { border: 1px solid #3f3f46; margin-top: 10px; padding-top: 10px; font-weight: bold; color: gray; }"
+        )
+        l_proxy = QHBoxLayout(gb_proxy)
+        self.in_prox_host = QLineEdit(placeholderText="127.0.0.1")
+        self.in_prox_port = QLineEdit(placeholderText="9050")
+        l_proxy.addWidget(QLabel("Host:"))
+        l_proxy.addWidget(self.in_prox_host)
+        l_proxy.addWidget(QLabel("Port:"))
+        l_proxy.addWidget(self.in_prox_port)
+
+        layout.addWidget(gb_proxy)
+
+        # Actions
+        btn_conn = QPushButton("TEST CONNECTION", objectName="Primary")
+        btn_conn.clicked.connect(self.do_connect)
+        layout.addWidget(btn_conn)
+
+        self.lbl_status = QLabel("Status: Disconnected")
+        self.lbl_status.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(self.lbl_status)
+
+        layout.addSpacing(20)
+        layout.addWidget(
+            QLabel("File Operations", styleSheet="font-weight: bold; color: #00e676;")
+        )
+
+        btn_upload = QPushButton(" Upload File to Remote Home")
+        btn_upload.clicked.connect(self.do_upload)
+        layout.addWidget(btn_upload)
+
+        layout.addStretch()
+
+    def do_connect(self):
+        h = self.in_host.text()
+        p = self.in_port.value()
+        u = self.in_user.text()
+        pwd = self.in_pass.text()
+
+        ph = self.in_prox_host.text()
+        pp = self.in_prox_port.text()
+
+        if not h or not u:
+            QMessageBox.warning(self, "Error", "Host and User required")
+            return
+
+        self.lbl_status.setText("Status: Connecting...")
+        self.lbl_status.repaint()
+
+        # Run in thread strictly speaking, but for simplicity/demo direct call
+        ok, msg = self.link.connect(h, p, u, pwd, proxy_host=ph, proxy_port=pp)
+        if ok:
+            self.lbl_status.setText(f"Status: {msg}")
+            self.lbl_status.setStyleSheet("color: #00e676")
+        else:
+            self.lbl_status.setText("Status: Failed")
+            self.lbl_status.setStyleSheet("color: #ff3d3d")
+            QMessageBox.critical(self, "Connection Error", msg)
+
+    def do_upload(self):
+        if not self.link.sftp:
+            QMessageBox.warning(self, "Error", "Establish connection first.")
+            return
+
+        f, _ = QFileDialog.getOpenFileName(self, "Select File to Upload")
+        if not f:
+            return
+
+        rem = os.path.basename(f)
+        ok, msg = self.link.upload(f, rem)
+        if ok:
+            QMessageBox.information(self, "Success", f"Uploaded to {rem}")
+        else:
+            QMessageBox.warning(self, "Error", msg)
+
+    def closeEvent(self, event):
+        self.link.close()
+        event.accept()
+
+
+class PassGenDialog(QDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Titanium Password Generator")
+        self.setFixedSize(400, 350)
+        self.setStyleSheet(STYLESHEET + "QDialog { background-color: #09090b; }")
+
+        layout = QVBoxLayout(self)
+        layout.setSpacing(20)
+
+        layout.addWidget(
+            QLabel("Generate High-Entropy Credentials", styleSheet="color: gray;")
+        )
+
+        # Length
+        h_len = QHBoxLayout()
+        self.spin_len = QSpinBox()
+        self.spin_len.setRange(8, 128)
+        self.spin_len.setValue(32)
+        h_len.addWidget(QLabel("Length:"))
+        h_len.addWidget(self.spin_len)
+        layout.addLayout(h_len)
+
+        # Result
+        self.out_pass = QLineEdit()
+        self.out_pass.setReadOnly(True)
+        self.out_pass.setStyleSheet(
+            "font-family: Consolas; font-size: 16px; color: #00e676; padding: 15px;"
+        )
+        layout.addWidget(self.out_pass)
+
+        # Actions
+        btn_gen = QPushButton(" GENERATE", objectName="Primary")
+        btn_gen.setIcon(qta.icon("fa5s.sync", color="black"))
+        btn_gen.clicked.connect(self.generate)
+        layout.addWidget(btn_gen)
+
+        btn_copy = QPushButton(" Copy to Clipboard")
+        btn_copy.clicked.connect(self.copy_to_clip)
+        layout.addWidget(btn_copy)
+
+        layout.addStretch()
+        self.generate()  # Init with one
+
+    def generate(self):
+        l = self.spin_len.value()
+        # Using core.tools
+        pwd = SecurityTools.generate_password(l)
+        self.out_pass.setText(pwd)
+
+    def copy_to_clip(self):
+        QApplication.clipboard().setText(self.out_pass.text())
+        QMessageBox.information(self, "Copied", "Password copied to clipboard.")
 
 
 class TaskWorker(QThread):
@@ -590,10 +767,20 @@ class NDSFC_Pro(QMainWindow):
         )
         l2.addWidget(QLabel("Secure Tunnel file transfer."))
         b2 = QPushButton("Connect...")
+        b2.clicked.connect(self.open_ghostlink)
         l2.addWidget(b2)
+
+        c3 = QFrame(objectName="Card")
+        l3 = QVBoxLayout(c3)
+        l3.addWidget(QLabel("PassGen", styleSheet="font-weight:bold; font-size:16px"))
+        l3.addWidget(QLabel("Military-grade key gen."))
+        b3 = QPushButton("Open Generator")
+        b3.clicked.connect(self.open_passgen)
+        l3.addWidget(b3)
 
         grid.addWidget(c1)
         grid.addWidget(c2)
+        grid.addWidget(c3)
         l.addLayout(grid)
         l.addStretch()
         return p
@@ -738,6 +925,14 @@ class NDSFC_Pro(QMainWindow):
 
     def open_stego_tool(self):
         dlg = StartStegoDialog(self)
+        dlg.exec()
+
+    def open_ghostlink(self):
+        dlg = GhostLinkDialog(self)
+        dlg.exec()
+
+    def open_passgen(self):
+        dlg = PassGenDialog(self)
         dlg.exec()
 
 
