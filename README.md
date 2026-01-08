@@ -138,6 +138,20 @@ We are constantly evolving NDSFC to meet military-grade standards. Here is what'
 
 ---
 
+## 📄 License
+
+Distributed under the GNU GPLv3 License. See `LICENSE` for more information.
+
+**DISCLAIMER:** This software is provided "as is", without warranty of any kind. The authors are not responsible for data loss, damages, or illicit use of this software. Use at your own risk.
+
+## 📄 Лицензия
+
+Распространяется под лицензией GNU GPLv3. См. файл `LICENSE` для получения дополнительной информации.
+
+**ОТКАЗ ОТ ОТВЕТСТВЕННОСТИ:** Данное программное обеспечение предоставляется «как есть», без каких-либо гарантий. Авторы не несут ответственности за потерю данных, ущерб или незаконное использование данного ПО. Используйте на свой страх и риск.
+
+---
+
 <div align="center">
     <p>Developed with ❤️ & 🔐 by [MintyExtremum & Vyxara-Arch]</p>
 </div>
