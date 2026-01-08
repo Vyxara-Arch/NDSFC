@@ -13,7 +13,7 @@ class StegoEngine:
         with open(secret_path, "rb") as f:
             data = f.read()
 
-        # Header: 4 bytes (Length of file)
+
         data = struct.pack(">I", len(data)) + data
 
         if len(data) * 8 > width * height * 3:
@@ -22,7 +22,6 @@ class StegoEngine:
         data_idx = 0
         bit_idx = 0
 
-        # Generator for pixels
         def pixel_gen():
             for y in range(height):
                 for x in range(width):
@@ -34,7 +33,7 @@ class StegoEngine:
             r, g, b = pixels[x, y]
             rgb = [r, g, b]
 
-            for i in range(3):  # R, G, B channels
+            for i in range(3):
                 if data_idx < len(data):
                     bit = (data[data_idx] >> (7 - bit_idx)) & 1
                     rgb[i] = (rgb[i] & ~1) | bit
@@ -59,7 +58,7 @@ class StegoEngine:
 
         data_bytes = bytearray()
 
-        # 1. Read Length (32 bits)
+
         len_bits = []
 
         def bit_generator():
@@ -79,8 +78,8 @@ class StegoEngine:
         for bit in len_bits:
             length_val = (length_val << 1) | bit
 
-        # 2. Read Data
-        if length_val > width * height * 3:  # Sanity check
+
+        if length_val > width * height * 3:
             raise ValueError("Corrupted Stego Header or No Data")
 
         for _ in range(length_val):
@@ -91,3 +90,4 @@ class StegoEngine:
 
         with open(output_path, "wb") as f:
             f.write(data_bytes)
+
