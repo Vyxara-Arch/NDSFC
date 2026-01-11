@@ -1,102 +1,119 @@
 <div align="center">
 
-# 🛡️ NDSFC v2.0
-## Not Detectable System File Cryptographer
-### *Titanium-Grade Privacy & Deniable Encryption Suite*
+![NDSFC Splash](C:/Users/nurgb/.gemini/antigravity/brain/ee96f97f-2947-456e-a7ee-46f84a383eaf/ndsfc_splash_v20_1768131888831.png)
+
+# 🛡️ NDSFC v2.0: The Digital Fortress
+### *Titanium-Grade Privacy & Post-Quantum Encryption Engine*
 
 [![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
-[![Security](https://img.shields.io/badge/Security-Post--Quantum%20Ready-EE3322?style=for-the-badge&logo=shield&logoColor=white)](https://github.com/Vyxara-Arch/NDSFC)
-[![UI](https://img.shields.io/badge/UI-Glassmorphism%20V2-00e676?style=for-the-badge)](https://github.com/Vyxara-Arch/NDSFC)
-[![Platform](https://img.shields.io/badge/Platform-Windows-0078D6?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/Vyxara-Arch/NDSFC)
+[![Security](https://img.shields.io/badge/Security-Post--Quantum%20Certified-EE3322?style=for-the-badge&logo=shield&logoColor=white)](https://github.com/Vyxara-Arch/NDSFC)
+[![UI](https://img.shields.io/badge/UI-Modern%20Glassmorphism%20V2-00e676?style=for-the-badge)](https://github.com/Vyxara-Arch/NDSFC)
+[![Platform](https://img.shields.io/badge/Platform-Windows%2010%2F11-0078D6?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/Vyxara-Arch/NDSFC)
+[![License](https://img.shields.io/badge/License-GPLv3-yellow?style=for-the-badge)](LICENSE)
 
-**[ English Documentation ](#-english) | [ Документация на Русском ](#-russian)**
+**NDSFC (v2.0)** is the ultimate digital security suite, meticulously engineered for deniable encryption, anti-forensics, and absolute data sovereignty. It combines military-grade cryptographic standards with a high-fidelity, user-centric Glassmorphism V2 interface.
+
+---
+
+[ **Detailed English Specs** ](#-english) | [ **Полная Документация (RU)** ](#-russian)
 
 </div>
 
 ---
 
 <a name="english"></a>
-## 🇺🇸 Project Overview
+## 🇺🇸 Technical Master-Spec (English)
 
-**NDSFC (v2.0)** is an advanced security ecosystem designed for individuals and professionals operating in high-risk digital environments. It transcends simple encryption by providing a multi-layered fortress that focuses on **Plausible Deniability**, **Anti-Forensics**, and **Titanium-Grade Cryptography**.
+### 🔒 Core Philosophy: Zero-Persistence
+NDSFC is built on the principle of **Zero-Persistence Data Handling**. We believe that encryption alone is not enough; true security requires **deniability** and **forensic invisibility**. Our architecture ensures that sensitive keys live only in volatile RAM and are zeroed out the moment they are no longer needed.
 
-Every feature is engineered to leave **zero footprint** on the host system while providing a seamless, modern, and high-fidelity user experience.
+### ⚛️ Cryptographic Foundations (v2.0 Overhaul)
+The V2 engine introduces significant upgrades to the mathematical core:
+- **Post-Quantum Cascade (V2)**: A hybrid KEM simulation layering `AES-256-GCM` and `ChaCha20-Poly1305`. Keying material is derived via `SHA3-512` and hardened with `Scrypt` salt-stretching.
+- **Deterministic SIV Suite**: Implements `AES-SIV` for unconditionally safe deterministic encryption, protecting against IV re-use vulnerabilities.
+- **Advanced Cipher Support**: Native implementations of `Blowfish-CTR`, `CAST5-CTR`, and `ChaCha20-Poly1305` for diverse security requirements.
+- **Hardened KDF**: High-memory, CPU-intensive `Scrypt` and `Argon2` derivation to render brute-force attacks economically unfeasible.
 
----
+### 🍱 The Strategic Modules
 
-## � Features & Capabilities
+#### 1. 📂 Mission Control (Dashboard)
+- **Integrated Search**: A high-performance, encrypted `IndexManager` using SQLite to track file metadata. Perform global searches across thousands of encrypted files in milliseconds.
+- **System Monitor**: Real-time tracking of memory usage and session health.
+- **Quick Actions**: Instant access to SFTP, Backups, and Index Rebuilding.
 
-### 1. ⚛️ Advanced Cryptography Suite
-The heart of NDSFC is a versatile engine supporting multiple encryption standards:
-- **Post-Quantum Cascade (V2)**: A proprietary hybrid KEM simulation. Data is first processed with `AES-256-GCM`, then wrapped in a second layer of `ChaCha20-Poly1305` with `SHA3-512` derived keys.
-- **AES-SIV (Synthetic IV)**: Deterministic encryption with built-in protection against replay attacks and nonce-misuse.
-- **ChaCha20-Poly1305**: High-speed, modern authenticated encryption.
-- **Blowfish & CAST5 (CTR)**: Specialized ciphers for high-entropy requirements and variable block sizes.
-- **Scrypt KDF**: Industry-standard key derivation with high iteration counts and random 16-byte salts.
+#### 2. 🛡️ Stealth & Anti-Forensics
+- **🚪 Duress (Panic) Protocol**: A multi-password system where a unique "Panic Password" triggers a silent, cryptographic self-destruction of the vault's master index.
+- **🖼️ Steganography 2.0**: Invisible LSB-matching archives hidden inside standard PNG images. Perfect for cross-border transport of sensitive payloads.
+- **🧹 DoD 5220.22-M Shredder**: Atomic-level data wiping with up to 35 overwrite passes, ensuring total unrecoverability.
+- **🧠 RAM-Only Sessions**: Encryption keys never touch the disk. They exist only in RAM and are destroyed upon logout or exit.
 
-### 2. 🛡️ Anti-Forensics & Deniability
-- **RAM-Only Sessions**: Encryption keys and decrypted buffers are kept strictly in volatile memory. They are wiped instantly upon logout, timeout, or application crash.
-- **🔥 Duress (Panic) Protocol**: A secondary "Duress Password" can be set for every vault. Entering this password at login **silently and permanently destroys** the vault's metadata and index, leaving a clean environment.
-- **🖼️ Steganography 2.0**: Completely hide your encrypted containers inside standard PNG images. These images remain viewable but carry hidden, bit-perfect data payloads.
-- **👻 Ghost Link (SFTP)**: Upload your files directly to a remote secure server via an encrypted SSH tunnel, bypassing local network snooping.
-
-### 3. 📂 Productivity & Management
-- **� Secure Search Index**: A dedicated `IndexManager` maintains an encrypted SQLite database of your vault's contents. Search for filenames or paths instantly without having to decrypt individual items.
-- **🧹 DoD 5220.22-M Shredder**: Overwrites files up to 35 times with random patterns to ensure they are unrecoverable by forensic software.
-- **👀 Folder Watcher**: Monitor specific directories; files dropped there are automatically encrypted and indexed according to your presets.
-- **📝 Encrypted Journal**: A built-in markdown-ready editor for storing sensitive notes, passwords, and instructions inside your vault.
-
-### 4. 🎨 Modern Interface (Glassmorphism V2)
-- **Ultra-Modern Style**: Translucent "glass" cards, smooth animations, and high-fidelity icons.
-- **Theme Manager**: Includes 7+ built-in themes (Matrix, Cyberpunk, Ghost, etc.) and a **Live Theme Creator** to design your own color palettes.
+#### 3. �️ Omega Tools & Operations
+- **👻 Ghost Link (SFTP)**: Seamless, encrypted upload of vault containers to remote SSH servers via secure tunnels.
+- **👀 Folder Watcher**: Real-time filesystem hooks that automatically encrypt files dropped into monitored directories.
+- **📝 Secure Journal**: An integrated markdown editor for storing critical text data within the encryption envelope.
+- **💾 Backup & Integrity**: Proprietary `.vib` (Vault Integrity Backup) system for secure migration of entire environments.
 
 ---
 
-## 🛠️ Installation & Setup
-
-### Prerequisites
-- Python 3.10 or higher
-- Windows OS (Optimized for 10/11)
-
-### Quick Start
-```bash
-# Clone the repository
-git clone https://github.com/Vyxara-Arch/NDSFC.git
-cd NDSFC
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Launch the fortress
-python main.py
+### 🏗️ Internal Architecture
+```text
+NDSFC/
+├── core/                # Technical Core
+│   ├── crypto_engine.py # V2 Multi-Algorithm Engine (AES-SIV, PQC, etc.)
+│   ├── indexer.py       # Encrypted SQLite Indexing & Search
+│   ├── auth.py          # RAM-Only Session Manager & 2FA
+│   ├── vault_manager.py # Multi-Vault OS isolation
+│   ├── folder_watcher.py# Real-time filesystem hooks
+│   ├── notes_manager.py # Encrypted Journal logic
+│   ├── backup_manager.py# .vib (Vault Integrity Backup)
+│   ├── shredder.py      # DoD Secure Wipe Logic (Multi-pass)
+│   └── theme_manager.py # JSON-driven Dynamic Styling Engine
+├── gui/                 # Premium Interface
+│   └── app_qt.py        # Glassmorphism V2 UI & Logic
+├── vaults/              # Encrypted Persistence Layer
+└── main.py              # Entry Point
 ```
-
-### Initial Configuration
-1. Click **"Create New Environment"**.
-2. Set a strong **Master Password** and a separate **Duress Password**.
-3. **CRITICAL**: Scan the QR code with Google Authenticator or any TOTP app. **There is no recovery if you lose your 2FA.**
 
 ---
 
 <a name="russian"></a>
-## 🇷🇺 Описание проекта (Russian)
+## 🇷🇺 Полная Техническая Спецификация (Russian)
 
-**NDSFC (v2.0)** — это не просто программа для шифрования, это полноценная цифровая крепость. Система спроектирована так, чтобы не оставлять следов в системе и обеспечивать максимальный уровень **Планомерного Отрицания (Plausible Deniability)**.
+### 🔒 Философия Безопасности: Нулевой След
+**NDSFC v2.0** — это цифровая крепость, созданная для защиты в самых агрессивных условиях. Мы объединили криптографию титанового уровня и принципы форензик-невидимости. Данные не просто зашифрованы — они защищены от физического извлечения и обнаружения.
 
-### ✨ Ключевые Возможности
-- **⚛️ Постквантовая защита**: Гибридное каскадное шифрование (AES-256 + ChaCha20) для защиты от угроз будущего.
-- **🔥 Режим Паники**: Специальный пароль, который при вводе имитирует обычный вход, но на самом деле безвозвратно удаляет зашифрованное хранилище.
-- **🖼️ Стеганография**: Скрытие данных внутри обычных фотографий (PNG).
-- **� Умный поиск**: Мгновенный поиск по зашифрованным файлам через зашифрованную базу данных индекса.
-- **🧠 Работа в RAM**: Ни один ключ шифрования никогда не записывается на диск — всё хранится только в оперативной памяти и исчезает при закрытии приложения.
+### ⚛️ Криптографическое Ядро (Обновление v2.0)
+- **Постквантовый Каскад (V2)**: Комбинированная защита (AES-256 + ChaCha20) с распределением ключей через SHA3-512.
+- **AES-SIV**: Профессиональный стандарт детерминированного шифрования с защитой от повторных атак.
+- **Система Мульти-Хранилищ**: Полная изоляция личных, рабочих и ложных данных.
+- **RAM-Sessions**: Ключи шифрования живут только в оперативной памяти и исчезают при выходе.
+
+### 🚀 Основные Механизмы
+*   **📂 Глобальный Поиск**: Зашифрованный индекс позволяет мгновенно находить файлы в архивах.
+*   **🔥 Протокол Принуждения**: Ввод "Пароля Паники" тихо стирает всю базу данных индекса и настроек хранилища.
+*   **🖼️ Стеганография**: Скрытие данных в обычных PNG файлах без видимых изменений.
+*   **💾 .VIB Резервные копии**: Безопасный экспорт и импорт ваших данных для миграции.
+*   **🎨 Glassmorphism V2**: Премиальный дизайн с эффектами матового стекла и поддержкой кастомных тем.
+
+---
+
+## 🛠️ Installation & Rapid Deployment
+
+### English
+1.  **Clone**: `git clone https://github.com/Vyxara-Arch/NDSFC.git`
+2.  **Dependencies**: `pip install -r requirements.txt`
+3.  **Start**: `python main.py`
+4.  **Security Setup**: Create Vault -> Set Master & Duress Keys -> Sync TOTP (2FA).
+
+### Русский
+1.  **Установка**: Склонируйте репозиторий и установите библиотеки из `requirements.txt`.
+2.  **Настройка**: Создайте хранилище, установите Мастер-пароль и Пароль Паники. Обязательно добавьте 2FA в Google Authenticator (Google Authenticator).
 
 ---
 
 ## 📄 License & Disclaimer
-
-**License**: Distributed under the **GNU GPLv3 License**.
-
-**DISCLAIMER**: This software is provided "as is", without warranty of any kind. The authors are not responsible for data loss, damages, or illicit use. Use at your own risk. There are **NO backdoors**—if you lose your credentials, your data is lost forever.
+**Distributed under the GNU GPLv3 License.**
+**WARNING**: There are **NO backdoors**. Если вы потеряете логин, пароль или 2FA — ваши данные математически невозможно восстановить. Используйте с осторожностью.
 
 <div align="center">
     <p>Developed with ❤️ & 🔐 by [MintyExtremum & Vyxara-Arch]</p>
