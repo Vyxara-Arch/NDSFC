@@ -23,11 +23,14 @@ class NotesManager:
         }
 
         note_json = json.dumps(note_data).encode()
-        encrypted = CryptoEngine.data_encrypt(note_json, password)
+        encrypted_dict = CryptoEngine.data_encrypt(note_json, password)
+
+        # Serialize encryption artifacts to JSON bytes
+        final_data = json.dumps(encrypted_dict).encode()
 
         note_path = os.path.join(self.notes_dir, f"{note_id}.note")
         with open(note_path, "wb") as f:
-            f.write(encrypted)
+            f.write(final_data)
 
         return note_id
 
@@ -39,12 +42,16 @@ class NotesManager:
 
         try:
             with open(note_path, "rb") as f:
-                encrypted = f.read()
+                file_content = f.read()
 
-            decrypted = CryptoEngine.data_decrypt(encrypted, password)
+            # Load encryption artifacts
+            encrypted_dict = json.loads(file_content.decode())
+
+            decrypted = CryptoEngine.data_decrypt(encrypted_dict, password)
             note_data = json.loads(decrypted.decode())
             return note_data
-        except:
+        except Exception as e:
+            # print(f"Error decrypting note: {e}")
             return None
 
     def update_note(self, note_id, title, content, password):
@@ -62,11 +69,12 @@ class NotesManager:
 
         # Encrypt and save
         note_json = json.dumps(note_data).encode()
-        encrypted = CryptoEngine.data_encrypt(note_json, password)
+        encrypted_dict = CryptoEngine.data_encrypt(note_json, password)
+        final_data = json.dumps(encrypted_dict).encode()
 
         note_path = os.path.join(self.notes_dir, f"{note_id}.note")
         with open(note_path, "wb") as f:
-            f.write(encrypted)
+            f.write(final_data)
 
         return True
 

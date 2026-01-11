@@ -16,6 +16,7 @@ from PyQt6.QtWidgets import (
     QProgressBar,
     QMessageBox,
     QListWidget,
+    QListWidgetItem,
     QComboBox,
     QCheckBox,
     QInputDialog,
@@ -71,6 +72,9 @@ from core.session import SecureSession
 
 
 from core.session import SecureSession
+from core.notes_manager import NotesManager
+from core.backup_manager import BackupManager
+from core.folder_watcher import FolderWatcher
 
 
 # Modern Glassmorphic Color Palette
@@ -848,6 +852,189 @@ class PassGenDialog(QDialog):
         QMessageBox.information(self, "Copied", "Password copied to clipboard.")
 
 
+class NotesDialog(QDialog):
+    def __init__(self, parent=None, vault_name=None, password=None):
+        super().__init__(parent)
+        self.setWindowTitle("Encrypted Notes Journal")
+        self.resize(900, 600)
+        self.setStyleSheet(STYLESHEET + "QDialog { background-color: #09090b; }")
+
+        self.vault_name = vault_name
+        self.password = password
+        self.manager = NotesManager(vault_name)
+        self.current_note_id = None
+
+        main_layout = QHBoxLayout(self)
+
+        # Left Panel: Note List & Search
+        left_panel = QFrame(objectName="Card")
+        left_layout = QVBoxLayout(left_panel)
+        left_layout.setContentsMargins(15, 15, 15, 15)
+
+        left_layout.addWidget(
+            QLabel(
+                "Your Notes",
+                styleSheet=f"font-size: 18px; font-weight: bold; color: {ACCENT_COLOR};",
+            )
+        )
+
+        self.search_bar = QLineEdit()
+        self.search_bar.setPlaceholderText("Search notes...")
+        self.search_bar.textChanged.connect(self.do_search)
+        left_layout.addWidget(self.search_bar)
+
+        self.note_list = QListWidget()
+        self.note_list.itemClicked.connect(self.load_note)
+        self.note_list.setStyleSheet("border: none; background: transparent;")
+        left_layout.addWidget(self.note_list)
+
+        btn_new = QPushButton(" + New Note", objectName="Primary")
+        btn_new.clicked.connect(self.new_note)
+        left_layout.addWidget(btn_new)
+
+        main_layout.addWidget(left_panel, 1)
+
+        # Right Panel: Editor
+        right_panel = QFrame(objectName="Card")
+        right_layout = QVBoxLayout(right_panel)
+        right_layout.setContentsMargins(20, 20, 20, 20)
+
+        # Title Row
+        title_row = QHBoxLayout()
+        self.in_title = QLineEdit()
+        self.in_title.setPlaceholderText("Note Title")
+        self.in_title.setStyleSheet(
+            f"font-size: 16px; font-weight: bold; color: white; border: none; background: transparent; padding: 0;"
+        )
+        title_row.addWidget(self.in_title)
+
+        btn_delete = QPushButton("Delete", objectName="Danger")
+        btn_delete.setFixedWidth(80)
+        btn_delete.clicked.connect(self.delete_note)
+        title_row.addWidget(btn_delete)
+
+        right_layout.addLayout(title_row)
+
+        # Separator
+        line = QFrame()
+        line.setFrameShape(QFrame.Shape.HLine)
+        line.setStyleSheet("color: #3f3f46;")
+        right_layout.addWidget(line)
+
+        # Content Editor
+        self.editor = QTextEdit()
+        self.editor.setPlaceholderText("Write your secure thoughts here...")
+        self.editor.setStyleSheet(
+            "font-family: Consolas; font-size: 14px; line-height: 1.5; border: none; background: transparent;"
+        )
+        right_layout.addWidget(self.editor)
+
+        # Status & Save
+        action_row = QHBoxLayout()
+        self.lbl_status = QLabel("Ready")
+        self.lbl_status.setStyleSheet(f"color: {TEXT_MUTED};")
+        action_row.addWidget(self.lbl_status)
+
+        action_row.addStretch()
+
+        btn_save = QPushButton(" Save Changes", objectName="Primary")
+        btn_save.setIcon(qta.icon("fa5s.save", color="black"))
+        btn_save.clicked.connect(self.save_note)
+        action_row.addWidget(btn_save)
+
+        right_layout.addLayout(action_row)
+
+        main_layout.addWidget(right_panel, 2)
+
+        self.refresh_list()
+
+    def refresh_list(self):
+        self.note_list.clear()
+        notes = self.manager.list_notes()
+
+        for n in notes:
+            note_content = self.manager.get_note(n["id"], self.password)
+            if note_content:
+                title = note_content.get("title", "Untitled")
+
+                widget_item = QListWidgetItem(title)
+                widget_item.setData(Qt.ItemDataRole.UserRole, n["id"])
+
+                modified = note_content.get("modified", "")
+                widget_item.setToolTip(f"Modified: {modified}")
+
+                self.note_list.addItem(widget_item)
+
+    def new_note(self):
+        self.current_note_id = None
+        self.in_title.clear()
+        self.editor.clear()
+        self.in_title.setFocus()
+        self.lbl_status.setText("New Note")
+
+    def load_note(self, item):
+        note_id = item.data(Qt.ItemDataRole.UserRole)
+        note = self.manager.get_note(note_id, self.password)
+
+        if note:
+            self.current_note_id = note_id
+            self.in_title.setText(note.get("title", ""))
+            self.editor.setText(note.get("content", ""))
+
+            mod = note.get("modified", "").split("T")[0]
+            self.lbl_status.setText(f"Last Modified: {mod}")
+
+    def save_note(self):
+        title = self.in_title.text()
+        content = self.editor.toPlainText()
+
+        if not title:
+            QMessageBox.warning(self, "Error", "Title cannot be empty")
+            return
+
+        if self.current_note_id:
+            self.manager.update_note(
+                self.current_note_id, title, content, self.password
+            )
+            self.lbl_status.setText("Saved existing note.")
+        else:
+            self.current_note_id = self.manager.create_note(
+                title, content, self.password
+            )
+            self.lbl_status.setText("Created new note.")
+
+        self.refresh_list()
+
+    def delete_note(self):
+        if not self.current_note_id:
+            return
+
+        confirm = QMessageBox.question(
+            self,
+            "Confirm Delete",
+            "Are you sure you want to delete this encrypted note? This cannot be undone.",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+        )
+
+        if confirm == QMessageBox.StandardButton.Yes:
+            self.manager.delete_note(self.current_note_id)
+            self.new_note()
+            self.refresh_list()
+
+    def do_search(self, text):
+        if not text:
+            self.refresh_list()
+            return
+
+        results = self.manager.search_notes(text, self.password)
+        self.note_list.clear()
+
+        for note in results:
+            widget_item = QListWidgetItem(note["title"])
+            widget_item.setData(Qt.ItemDataRole.UserRole, note["id"])
+            self.note_list.addItem(widget_item)
+
+
 class InitVaultDialog(QDialog):
     def __init__(self, parent=None, vault_mgr=None):
         super().__init__(parent)
@@ -1016,6 +1203,125 @@ class TaskWorker(QThread):
             self.finished.emit((False, str(e)))
 
 
+class FolderWatcherDialog(QDialog):
+    def __init__(self, parent=None, watcher=None):
+        super().__init__(parent)
+        self.watcher = watcher
+        self.setWindowTitle("Auto-Encrypt Watcher")
+        self.resize(600, 400)
+        self.setStyleSheet(STYLESHEET + "QDialog { background-color: #09090b; }")
+
+        layout = QVBoxLayout(self)
+
+        # Status
+        self.lbl_status = QLabel("Service Status: STOPPED")
+        self.lbl_status.setStyleSheet(
+            "font-size: 16px; font-weight: bold; color: gray;"
+        )
+        layout.addWidget(self.lbl_status)
+
+        # Toggle
+        self.btn_toggle = QPushButton("START WATCHER", objectName="Primary")
+        self.btn_toggle.clicked.connect(self.toggle_service)
+        layout.addWidget(self.btn_toggle)
+
+        layout.addSpacing(20)
+
+        # Folder List
+        layout.addWidget(
+            QLabel(
+                "Monitored Folders:",
+                styleSheet=f"color: {ACCENT_COLOR}; font-weight: bold;",
+            )
+        )
+        self.list_folders = QListWidget()
+        layout.addWidget(self.list_folders)
+
+        # Controls
+        row = QHBoxLayout()
+        b_add = QPushButton("Add Folder")
+        b_add.clicked.connect(self.add_folder)
+        b_rem = QPushButton("Remove Selected")
+        b_rem.clicked.connect(self.remove_folder)
+        row.addWidget(b_add)
+        row.addWidget(b_rem)
+        layout.addLayout(row)
+
+        # Log
+        layout.addWidget(QLabel("Activity Log:", styleSheet="color: gray;"))
+        self.log = QTextEdit()
+        self.log.setReadOnly(True)
+        self.log.setFixedHeight(100)
+        layout.addWidget(self.log)
+
+        self.update_ui()
+
+        # Connect signal
+        if self.watcher:
+            self.watcher.file_processed.connect(self.on_file_processed)
+
+    def update_ui(self):
+        if self.watcher and self.watcher.running:
+            self.lbl_status.setText("Service Status: RUNNING")
+            self.lbl_status.setStyleSheet(
+                "font-size: 16px; font-weight: bold; color: #00e676;"
+            )
+            self.btn_toggle.setText("STOP WATCHER")
+            self.btn_toggle.setObjectName("Danger")
+        else:
+            self.lbl_status.setText("Service Status: STOPPED")
+            self.lbl_status.setStyleSheet(
+                "font-size: 16px; font-weight: bold; color: gray;"
+            )
+            self.btn_toggle.setText("START WATCHER")
+            self.btn_toggle.setObjectName("Primary")
+
+        # Refresh style logic workaround since Qt doesn't dynamic reload objectName style easily
+        # We manually apply specific style or just trust stylesheet reload?
+        # A simple trick is unpolish/polish, but let's just set specific style
+        if self.btn_toggle.objectName() == "Danger":
+            self.btn_toggle.setStyleSheet("background-color: #ff3d3d; color: white;")
+        else:
+            self.btn_toggle.setStyleSheet(
+                f"background-color: {ACCENT_COLOR}; color: black;"
+            )
+
+        self.list_folders.clear()
+        if self.watcher:
+            for f in self.watcher.get_folders():
+                self.list_folders.addItem(f)
+
+    def toggle_service(self):
+        if not self.watcher:
+            return
+
+        if self.watcher.running:
+            self.watcher.stop()
+        else:
+            if not self.watcher.get_folders():
+                QMessageBox.warning(
+                    self, "Error", "Add at least one folder monitoring."
+                )
+                return
+            self.watcher.start()
+        self.update_ui()
+
+    def add_folder(self):
+        d = QFileDialog.getExistingDirectory(self, "Select Folder to Watch")
+        if d and self.watcher:
+            self.watcher.add_folder(d)
+            self.update_ui()
+
+    def remove_folder(self):
+        item = self.list_folders.currentItem()
+        if item and self.watcher:
+            self.watcher.remove_folder(item.text())
+            self.update_ui()
+
+    def on_file_processed(self, filename, status):
+        self.log.append(f"[{time.strftime('%H:%M:%S')}] {filename}: {status}")
+
+
 class NDSFC_Pro(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -1026,6 +1332,7 @@ class NDSFC_Pro(QMainWindow):
         self.vault_mgr = VaultManager()
         self.auth = AuthManager()
         self.session = SecureSession()
+        self.watcher = None
 
         self.main_stack = FadeStack()
         self.setCentralWidget(self.main_stack)
@@ -1084,6 +1391,13 @@ class NDSFC_Pro(QMainWindow):
         btn_new.setCursor(Qt.CursorShape.PointingHandCursor)
         btn_new.clicked.connect(self.show_create_vault_dialog)
 
+        btn_imp = QPushButton("Import Vault Backup")
+        btn_imp.setStyleSheet(
+            "background: transparent; color: gray; text-align: center;"
+        )
+        btn_imp.setCursor(Qt.CursorShape.PointingHandCursor)
+        btn_imp.clicked.connect(self.do_vault_import)
+
         cl.addWidget(icon_lbl)
         cl.addWidget(lbl_title)
         cl.addSpacing(10)
@@ -1094,6 +1408,7 @@ class NDSFC_Pro(QMainWindow):
         cl.addStretch()
         cl.addWidget(btn_login)
         cl.addWidget(btn_new)
+        cl.addWidget(btn_imp)
 
         layout.addWidget(card)
         self.main_stack.addWidget(w)
@@ -1451,6 +1766,11 @@ class NDSFC_Pro(QMainWindow):
         fl.addRow("Default Encryption:", self.set_algo)
         fl.addRow("Shredder Intensity:", self.set_shred)
         fl.addRow("UI Accent Color:", self.set_theme)
+
+        btn_export = QPushButton("Backup Vault (.vib)")
+        btn_export.clicked.connect(self.do_vault_export)
+        fl.addRow("Vault Backup:", btn_export)
+
         fl.addRow("", btn_save)
 
         l.addWidget(form_frame)
@@ -1465,8 +1785,10 @@ class NDSFC_Pro(QMainWindow):
             QLabel("Omega Utilities", styleSheet="font-size: 28px; font-weight: bold;")
         )
 
-        grid = QHBoxLayout()
+        grid = QGridLayout()
+        grid.setSpacing(20)
 
+        # Card 1: Stego
         c1 = QFrame(objectName="Card")
         l1 = QVBoxLayout(c1)
         l1.addWidget(
@@ -1477,6 +1799,7 @@ class NDSFC_Pro(QMainWindow):
         b1.clicked.connect(self.open_stego_tool)
         l1.addWidget(b1)
 
+        # Card 2: Ghost
         c2 = QFrame(objectName="Card")
         l2 = QVBoxLayout(c2)
         l2.addWidget(
@@ -1487,6 +1810,7 @@ class NDSFC_Pro(QMainWindow):
         b2.clicked.connect(self.open_ghostlink)
         l2.addWidget(b2)
 
+        # Card 3: PassGen
         c3 = QFrame(objectName="Card")
         l3 = QVBoxLayout(c3)
         l3.addWidget(QLabel("PassGen", styleSheet="font-weight:bold; font-size:16px"))
@@ -1495,9 +1819,34 @@ class NDSFC_Pro(QMainWindow):
         b3.clicked.connect(self.open_passgen)
         l3.addWidget(b3)
 
-        grid.addWidget(c1)
-        grid.addWidget(c2)
-        grid.addWidget(c3)
+        # Card 4: Notes
+        c4 = QFrame(objectName="Card")
+        l4 = QVBoxLayout(c4)
+        l4.addWidget(
+            QLabel("Secure Journal", styleSheet="font-weight:bold; font-size:16px")
+        )
+        l4.addWidget(QLabel("Encrypted personal notes."))
+        b4 = QPushButton("Open Journal")
+        b4.clicked.connect(self.open_notes)
+        l4.addWidget(b4)
+
+        # Card 5: Watcher
+        c5 = QFrame(objectName="Card")
+        l5 = QVBoxLayout(c5)
+        l5.addWidget(
+            QLabel("Folder Watcher", styleSheet="font-weight:bold; font-size:16px")
+        )
+        l5.addWidget(QLabel("Auto-encrypt dropped files."))
+        b5 = QPushButton("Manage Service")
+        b5.clicked.connect(self.open_folder_watcher)
+        l5.addWidget(b5)
+
+        grid.addWidget(c1, 0, 0)
+        grid.addWidget(c2, 0, 1)
+        grid.addWidget(c3, 0, 2)
+        grid.addWidget(c4, 1, 0)
+        grid.addWidget(c5, 1, 1)
+
         l.addLayout(grid)
         l.addStretch()
         return p
@@ -1566,6 +1915,7 @@ class NDSFC_Pro(QMainWindow):
 
         res, msg = self.auth.login(pwd, code)
         if res:
+            self.watcher = FolderWatcher(CryptoEngine, pwd)
             self.session.start_session(b"TEMP", vault_name)
             self.load_user_settings()
             self.main_stack.fade_to_index(1)
@@ -1575,6 +1925,9 @@ class NDSFC_Pro(QMainWindow):
             QMessageBox.warning(self, "Error", msg)
 
     def do_logout(self):
+        if self.watcher:
+            self.watcher.stop()
+            self.watcher = None
         self.session.destroy_session()
         self.in_pass.clear()
         self.in_2fa.clear()
@@ -1720,6 +2073,79 @@ class NDSFC_Pro(QMainWindow):
     def open_passgen(self):
         dlg = PassGenDialog(self)
         dlg.exec()
+
+    def open_notes(self):
+        # Pass current vault credentials
+        vault_name = self.cb_vaults.currentText()
+        pwd = self.in_pass.text()
+        if not pwd:
+            QMessageBox.warning(self, "Error", "Session locked or password missing.")
+            return
+
+        dlg = NotesDialog(self, vault_name, pwd)
+        dlg.exec()
+
+    def open_folder_watcher(self):
+        if not self.watcher:
+            QMessageBox.warning(
+                self, "Service Error", "Watcher service not initialized."
+            )
+            return
+        dlg = FolderWatcherDialog(self, self.watcher)
+        dlg.exec()
+
+    def do_vault_export(self):
+        if not self.session.is_active or not self.session.current_vault:
+            QMessageBox.warning(self, "Error", "No active session.")
+            return
+
+        out_dir = QFileDialog.getExistingDirectory(self, "Select Backup Destination")
+        if not out_dir:
+            return
+
+        pwd, ok = QInputDialog.getText(
+            self,
+            "Encrypt Backup",
+            "Enter a strong password to encrypt this backup archive:\n(You will need this to restore it)",
+            QLineEdit.EchoMode.Password,
+        )
+        if not ok or not pwd:
+            return
+
+        bm = BackupManager()
+        res, path = bm.export_vault(self.session.current_vault, out_dir, pwd)
+
+        if res:
+            QMessageBox.information(
+                self, "Export Successful", f"Vault backup saved to:\n{path}"
+            )
+        else:
+            QMessageBox.critical(self, "Export Failed", path)
+
+    def do_vault_import(self):
+        f, _ = QFileDialog.getOpenFileName(
+            self, "Select Backup File", "", "Vault Backups (*.vib)"
+        )
+        if not f:
+            return
+
+        pwd, ok = QInputDialog.getText(
+            self,
+            "Decrypt Backup",
+            "Enter the password used to encrypt this backup:",
+            QLineEdit.EchoMode.Password,
+        )
+        if not ok or not pwd:
+            return
+
+        bm = BackupManager()
+        res, msg = bm.import_vault(f, pwd)
+
+        if res:
+            QMessageBox.information(self, "Restore Successful", msg)
+            self.refresh_vaults()
+        else:
+            QMessageBox.critical(self, "Restore Failed", msg)
 
 
 def main():
