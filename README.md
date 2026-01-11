@@ -1,13 +1,13 @@
 <div align="center">
 
-<img src="assets/ndsfc_splash.png" width="720"/>
+<img src="assets/Noxium.png" width="720"/>
 
-# 🛡️ NOXIUM  
+# NOXIUM  
 ### *Anti-Forensics · Post-Quantum Encryption (PQC Based)*
 
 [![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
-[![Security](https://img.shields.io/badge/Security-Zero--Persistence-critical?style=for-the-badge&logo=shield&logoColor=white)](#)
-[![Crypto](https://img.shields.io/badge/Crypto-Post--Quantum-orange?style=for-the-badge)](#)
+[![Security](https://img.shields.io/badge/Security-Data--Secure-critical?style=for-the-badge&logo=shield&logoColor=white)](#)
+[![Crypto](https://img.shields.io/badge/Crypto-PQC--Based-orange?style=for-the-badge)](#)
 [![Platform](https://img.shields.io/badge/Platform-Windows%2010%2F11-0078D6?style=for-the-badge&logo=windows&logoColor=white)](#)
 [![License](https://img.shields.io/badge/License-GPLv3-yellow?style=for-the-badge)](LICENSE)
 
@@ -27,10 +27,6 @@ Designed for hostile environments.
 <a name="english"></a>
 ## 🇺🇸 English — Technical Overview
 
-### 🔐 Core Security Philosophy — *Zero Persistence*
-Encryption alone is insufficient.  
-**True security means leaving no trace.**
-
 NOXIUM enforces:
 - No plaintext artifacts on disk
 - No persistent encryption keys
@@ -40,7 +36,7 @@ All cryptographic material exists **only in volatile RAM** and is securely wiped
 
 ---
 
-### ⚛️ Cryptographic Engine (v2.0)
+### ⚛️ Cryptographic Engine
 
 | Component | Description |
 |---------|-------------|
@@ -64,8 +60,8 @@ All cryptographic material exists **only in volatile RAM** and is securely wiped
 #### 🛡️ Stealth & Anti-Forensics
 - **Duress Password** → silent index annihilation
 - **RAM-only sessions**
-- **Steganography 2.0** (PNG LSB matching)
-- **DoD 5220.22-M Shredder** (up to 35 passes)
+- **Steganography** (PNG LSB matching)
+- **DoD 5220.22-M Shredder** (up to 35 passes , customizable in settings.)
 
 #### 🧰 Omega Tools
 - **Ghost Link (SFTP)** — encrypted remote vault transfer
@@ -88,7 +84,7 @@ All cryptographic material exists **only in volatile RAM** and is securely wiped
 
 ### 🏗️ Project Architecture
 ```
-NDSFC/
+NOXIUM/
 ├── core/
 │ ├── crypto_engine.py
 │ ├── indexer.py
@@ -107,8 +103,8 @@ NDSFC/
 ## 🛠️ Installation
 
 ```bash
-git clone https://github.com/Vyxara-Arch/NDSFC.git
-cd NDSFC
+git clone https://github.com/Vyxara-Arch/NOXIUM.git
+cd NOXIUM
 pip install -r requirements.txt
 python main.py
 ```
@@ -117,7 +113,7 @@ python main.py
 👥 Authors & Contributors
 MintyExtremum — Core Cryptography
 Vyxara-Arch — Architecture & UI
-Blooder — Security Research & Testing & README
+Blooder — Security Research & Testing
 
 ---
 
@@ -127,5 +123,5 @@ GNU GPLv3. This software is provided AS IS. Use responsibly. Freedom requires re
 ---
 
 <div align="center">
-🔐 NOXIUM — Leave Nothing Behind.
+🔐 NOXIUM — Leave Nothing Behind · Created with <3
 </div>
