@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="assets/Noxium.png" width="480"/>
+<img src="assets/Noxium.png" width="360"/>
 
 # NOXIUM  
 ### *Anti-Forensics · Post-Quantum Encryption (PQC Based)*
