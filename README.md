@@ -1,156 +1,102 @@
 <div align="center">
 
-# 🛡️ NDSFC
-### Not Detectable System File Cryptographer
+# 🛡️ NDSFC v2.0
+## Not Detectable System File Cryptographer
+### *Titanium-Grade Privacy & Deniable Encryption Suite*
 
-![Python](https://img.shields.io/badge/Python-3.10%2B-blue?style=for-the-badge&logo=python)
-![Security](https://img.shields.io/badge/Security-Military%20Grade-red?style=for-the-badge&logo=shield)
-![Platform](https://img.shields.io/badge/Platform-Windows%20(Local)-0078D6?style=for-the-badge&logo=windows)
-![GUI](https://img.shields.io/badge/GUI-PyQt6-green?style=for-the-badge)
+[![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
+[![Security](https://img.shields.io/badge/Security-Post--Quantum%20Ready-EE3322?style=for-the-badge&logo=shield&logoColor=white)](https://github.com/Vyxara-Arch/NDSFC)
+[![UI](https://img.shields.io/badge/UI-Glassmorphism%20V2-00e676?style=for-the-badge)](https://github.com/Vyxara-Arch/NDSFC)
+[![Platform](https://img.shields.io/badge/Platform-Windows-0078D6?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/Vyxara-Arch/NDSFC)
 
-**[ English ](#-english-documentation) | [ Русский ](#-документация-на-русском)**
+**[ English Documentation ](#-english) | [ Документация на Русском ](#-russian)**
 
 </div>
 
 ---
 
 <a name="english"></a>
-## 🇺🇸 English Documentation
+## 🇺🇸 Project Overview
 
-### 🔒 Project Overview
-**NDSFC** is a high-security, local-first data fortress designed for specialized environments. It features a modern dark UI (PyQt6), multi-vault architecture, and post-quantum encryption capabilities. It operates strictly offline (except for user-initiated SFTP) and utilizes RAM-only session handling to prevent forensic recovery.
+**NDSFC (v2.0)** is an advanced security ecosystem designed for individuals and professionals operating in high-risk digital environments. It transcends simple encryption by providing a multi-layered fortress that focuses on **Plausible Deniability**, **Anti-Forensics**, and **Titanium-Grade Cryptography**.
 
-### ✨ Key Features
+Every feature is engineered to leave **zero footprint** on the host system while providing a seamless, modern, and high-fidelity user experience.
 
-*   **🗄️ Multi-Vault Architecture**: Create separate isolated environments (Work, Personal, Decoy) with independent keys and settings.
-*   **⚛️ Quantum-Resistant Encryption**:
-    *   **Standard**: AES-256-GCM or ChaCha20-Poly1305.
-    *   **PQC Cascade**: A hybrid layer combining AES-256 + ChaCha20 for defense against future quantum attacks. (Currently not working as needed. In Beta.)
-    *   **2FA File Lock**: Files are encrypted using a password AND a secret answer.
-*   **🖼️ Steganography 2.0**: Hide encrypted archives inside PNG images with bit-perfect extraction logic.
-*   **👻 Ghost Link (SFTP)**: Securely upload sensitive data to remote servers via SSH tunnels directly from the app.
-*   **🔥 Panic Mode & Shredder**:
-    *   **Duress Password**: Entering a specific "Panic Password" at login silently wipes the vault database.
-    *   **DoD Shredding**: Files are overwritten 3+ times before deletion.
-*   **🧠 RAM-Only Session**: Decryption keys exist only in volatile memory and are wiped upon logout or exit.
+---
 
-### 🛠️ Installation
+## � Features & Capabilities
 
-1.  **Prerequisites**: Python 3.10 or higher.
-2.  **Clone & Setup**:
-    ```bash
-    git clone https://github.com/Vyxara-Arch/NDSFC.git
-    cd NDSFC
-    pip install -r requirements.txt
-    ```
+### 1. ⚛️ Advanced Cryptography Suite
+The heart of NDSFC is a versatile engine supporting multiple encryption standards:
+- **Post-Quantum Cascade (V2)**: A proprietary hybrid KEM simulation. Data is first processed with `AES-256-GCM`, then wrapped in a second layer of `ChaCha20-Poly1305` with `SHA3-512` derived keys.
+- **AES-SIV (Synthetic IV)**: Deterministic encryption with built-in protection against replay attacks and nonce-misuse.
+- **ChaCha20-Poly1305**: High-speed, modern authenticated encryption.
+- **Blowfish & CAST5 (CTR)**: Specialized ciphers for high-entropy requirements and variable block sizes.
+- **Scrypt KDF**: Industry-standard key derivation with high iteration counts and random 16-byte salts.
 
-### 🚀 Usage
+### 2. 🛡️ Anti-Forensics & Deniability
+- **RAM-Only Sessions**: Encryption keys and decrypted buffers are kept strictly in volatile memory. They are wiped instantly upon logout, timeout, or application crash.
+- **🔥 Duress (Panic) Protocol**: A secondary "Duress Password" can be set for every vault. Entering this password at login **silently and permanently destroys** the vault's metadata and index, leaving a clean environment.
+- **🖼️ Steganography 2.0**: Completely hide your encrypted containers inside standard PNG images. These images remain viewable but carry hidden, bit-perfect data payloads.
+- **👻 Ghost Link (SFTP)**: Upload your files directly to a remote secure server via an encrypted SSH tunnel, bypassing local network snooping.
 
-1.  **Launch the System**:
-    ```bash
-    python main.py
-    ```
-2.  **Initialization**:
-    *   Click **"Create New Environment"**.
-    *   Set a Username, Master Password, and a **Duress (Panic) Password**.
-    *   Scan the QR Code (or copy the Secret) into **Google Authenticator**.
-3.  **Dashboard**:
-    *   **Drag & Drop** files to encrypt/decrypt.
-    *   Use **Omega Tools** for Steganography or Metadata Cleaning.
+### 3. 📂 Productivity & Management
+- **� Secure Search Index**: A dedicated `IndexManager` maintains an encrypted SQLite database of your vault's contents. Search for filenames or paths instantly without having to decrypt individual items.
+- **🧹 DoD 5220.22-M Shredder**: Overwrites files up to 35 times with random patterns to ensure they are unrecoverable by forensic software.
+- **👀 Folder Watcher**: Monitor specific directories; files dropped there are automatically encrypted and indexed according to your presets.
+- **📝 Encrypted Journal**: A built-in markdown-ready editor for storing sensitive notes, passwords, and instructions inside your vault.
 
-### ⚠️ Security Notice
-This tool is designed for **educational and defensive purposes**.
-*   If you forget your password or 2FA, **data is permanently lost**. There are no backdoors.
-*   The **Duress Password** destroys the active vault configuration immediately. Use with caution.
+### 4. 🎨 Modern Interface (Glassmorphism V2)
+- **Ultra-Modern Style**: Translucent "glass" cards, smooth animations, and high-fidelity icons.
+- **Theme Manager**: Includes 7+ built-in themes (Matrix, Cyberpunk, Ghost, etc.) and a **Live Theme Creator** to design your own color palettes.
+
+---
+
+## 🛠️ Installation & Setup
+
+### Prerequisites
+- Python 3.10 or higher
+- Windows OS (Optimized for 10/11)
+
+### Quick Start
+```bash
+# Clone the repository
+git clone https://github.com/Vyxara-Arch/NDSFC.git
+cd NDSFC
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Launch the fortress
+python main.py
+```
+
+### Initial Configuration
+1. Click **"Create New Environment"**.
+2. Set a strong **Master Password** and a separate **Duress Password**.
+3. **CRITICAL**: Scan the QR code with Google Authenticator or any TOTP app. **There is no recovery if you lose your 2FA.**
 
 ---
 
 <a name="russian"></a>
-## 🇷🇺 Документация на Русском
+## 🇷🇺 Описание проекта (Russian)
 
-### 🔒 О проекте
-**NDSFC** — это автономная цифровая крепость для защиты данных. Программа создана для работы в агрессивных средах, использует современный интерфейс на PyQt6, поддерживает множество изолированных хранилищ и постквантовое шифрование. Система работает локально и использует сессии только в оперативной памяти (RAM-Only), чтобы предотвратить форензику (восстановление данных экспертами).
+**NDSFC (v2.0)** — это не просто программа для шифрования, это полноценная цифровая крепость. Система спроектирована так, чтобы не оставлять следов в системе и обеспечивать максимальный уровень **Планомерного Отрицания (Plausible Deniability)**.
 
-### ✨ Ключевые возможности
-
-*   **🗄️ Система Мульти-Хранилищ**: Создавайте изолированные среды (Рабочая, Личная, Ложная) с разными ключами и настройками.
-*   **⚛️ Квантовая Стойкость (PQC)**:
-    *   **Стандарт**: AES-256-GCM или ChaCha20-Poly1305.
-    *   **PQC Каскад**: Гибридное шифрование (AES-256 поверх ChaCha20) для защиты от квантовых компьютеров. (Спорная функция,в данный момент в бете)
-    *   **2FA Блокировка Файлов**: Файл шифруется паролем + секретным ответом. Без обоих компонентов файл не открыть.
-*   **🖼️ Стеганография 2.0**: Скрытие зашифрованных архивов внутри PNG-изображений без потери данных.
-*   **👻 Ghost Link (SFTP)**: Безопасная передача данных на удаленные серверы через SSH-туннель.
-*   **🔥 Режим Паники и Шредер**:
-    *   **Пароль под принуждением**: Ввод специального "Panic Password" при входе вызывает тихое уничтожение базы данных хранилища.
-    *   **DoD Уничтожение**: Файлы перезаписываются (1-35 проходов) перед удалением.
-*   **🧠 Сессии в RAM**: Ключи расшифровки живут только в оперативной памяти и обнуляются при выходе.
-
-### 🛠️ Установка
-
-1.  **Требования**: Python 3.10 или выше.
-2.  **Установка**:
-    ```bash
-    git clone https://github.com/Vyxara-Arch/NDSFC.git
-    cd NDSFC
-    pip install -r requirements.txt
-    ```
-
-### 🚀 Использование
-
-1.  **Запуск**:
-    ```bash
-    python main.py
-    ```
-2.  **Первичная настройка**:
-    *   Нажмите **"Create New Environment"** (Создать среду).
-    *   Придумайте Логин, Мастер-пароль и **Пароль Паники**.
-    *   Добавьте секретный код в **Google Authenticator**.
-3.  **Панель управления**:
-    *   Перетаскивайте файлы (**Drag & Drop**) для шифрования.
-    *   Используйте вкладку **Omega Tools** для стеганографии или очистки метаданных (GPS) из фото.
-
-### ⚠️ Предупреждение о безопасности
-Инструмент создан для защиты приватности.
-*   Если вы забудете пароль или потеряете 2FA — **данные восстановить невозможно**. Бэкдоров нет.
-*   Ввод **Пароля Паники** безвозвратно удаляет конфигурацию активного хранилища. Будьте осторожны.
+### ✨ Ключевые Возможности
+- **⚛️ Постквантовая защита**: Гибридное каскадное шифрование (AES-256 + ChaCha20) для защиты от угроз будущего.
+- **🔥 Режим Паники**: Специальный пароль, который при вводе имитирует обычный вход, но на самом деле безвозвратно удаляет зашифрованное хранилище.
+- **🖼️ Стеганография**: Скрытие данных внутри обычных фотографий (PNG).
+- **� Умный поиск**: Мгновенный поиск по зашифрованным файлам через зашифрованную базу данных индекса.
+- **🧠 Работа в RAM**: Ни один ключ шифрования никогда не записывается на диск — всё хранится только в оперативной памяти и исчезает при закрытии приложения.
 
 ---
 
-## 🗺️ Roadmap & TO-DO
+## 📄 License & Disclaimer
 
-We are constantly evolving NDSFC to meet military-grade standards. Here is what's coming next:
+**License**: Distributed under the **GNU GPLv3 License**.
 
-### 🇺🇸 Upcoming Features (English)
-- [ ] **Hardware Key Support**: Integration with YubiKey/Nitrokey for physical 2FA authentication.
-- [ ] **Tor Network Integration**: Native `.onion` routing for the Ghost Link (SFTP) module without external proxy configuration.
-- [ ] **Decoy Operating System**: A bootloader hook that boots into a fake Windows environment if the wrong password is typed at system startup.
-- [ ] **Cloud Obfuscation**: Split encrypted files into chunks and distribute them across multiple free cloud providers (Google Drive, Dropbox) so no single provider has the full file.
-- [ ] **Mobile Companion App**: A Flutter-based mobile app to decrypt NDSFC containers on Android (Local only via USB-OTG).
-- [ ] **Self-Destruct USB**: Feature to automatically wipe the vault if a specific USB "Key" is removed from the PC. (Not planning rn)
-
-### 🇷🇺 Планы развития (Russian)
-- [ ] **Поддержка аппаратных ключей**: Интеграция с YubiKey и Nitrokey для физической двухфакторной аутентификации.
-- [ ] **Встроенный Tor**: Нативная маршрутизация через сеть `.onion` для модуля Ghost Link (SFTP) без необходимости ручной настройки прокси.
-- [ ] **Ложная ОС (Decoy OS)**: Хук загрузчика, который загружает фальшивую, "чистую" Windows, если при включении компьютера введен неправильный пароль.
-- [ ] **Облачная обфускация**: Разделение зашифрованного файла на части и распределение их по разным облакам (Google Drive, Dropbox), чтобы ни один провайдер не имел полного файла.
-- [ ] **Мобильное приложение**: Приложение-компаньон на Android для расшифровки контейнеров NDSFC (только локально через USB-OTG).
-- [ ] **USB-Детонатор**: Функция автоматического стирания хранилища, если из компьютера извлекается специальная USB-флешка ("Ключ"). (Пока что очень спорное решение)
-
----
-
-## 📄 License
-
-Distributed under the GNU GPLv3 License. See `LICENSE` for more information.
-
-**DISCLAIMER:** This software is provided "as is", without warranty of any kind. The authors are not responsible for data loss, damages, or illicit use of this software. Use at your own risk.
-
-## 📄 Лицензия
-
-Распространяется под лицензией GNU GPLv3. См. файл `LICENSE` для получения дополнительной информации.
-
-**ОТКАЗ ОТ ОТВЕТСТВЕННОСТИ:** Данное программное обеспечение предоставляется «как есть», без каких-либо гарантий. Авторы не несут ответственности за потерю данных, ущерб или незаконное использование данного ПО. Используйте на свой страх и риск.
-
----
+**DISCLAIMER**: This software is provided "as is", without warranty of any kind. The authors are not responsible for data loss, damages, or illicit use. Use at your own risk. There are **NO backdoors**—if you lose your credentials, your data is lost forever.
 
 <div align="center">
     <p>Developed with ❤️ & 🔐 by [MintyExtremum & Vyxara-Arch]</p>

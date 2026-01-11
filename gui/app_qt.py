@@ -40,6 +40,9 @@ from PyQt6.QtWidgets import (
     QButtonGroup,
     QGridLayout,
     QColorDialog,
+    QTableWidget,
+    QTableWidgetItem,
+    QAbstractItemView,
 )
 import io
 import qrcode
@@ -77,6 +80,7 @@ from core.notes_manager import NotesManager
 from core.backup_manager import BackupManager
 from core.folder_watcher import FolderWatcher
 from core.theme_manager import ThemeManager
+from core.indexer import IndexManager
 
 
 # Modern Glassmorphic Color Palette
@@ -1420,6 +1424,7 @@ class NDSFC_Pro(QMainWindow):
         self.session = SecureSession()
         self.watcher = None
         self.theme_manager = ThemeManager()
+        self.indexer = None
 
         self.main_stack = FadeStack()
         self.setCentralWidget(self.main_stack)
@@ -1437,65 +1442,126 @@ class NDSFC_Pro(QMainWindow):
 
     def init_login_ui(self):
         w = QWidget()
+        w.setObjectName("LoginBg")
+        w.setStyleSheet(
+            "QWidget#LoginBg { background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #09090b, stop:1 #18181b); }"
+        )
+
         layout = QVBoxLayout(w)
         layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
-        card = QFrame(objectName="Card")
-        card.setFixedSize(450, 550)
+        card = QFrame(objectName="GlassCard")
+        card.setFixedSize(400, 560)
+        card.setStyleSheet(
+            """
+            QFrame#GlassCard {
+                background-color: rgba(24, 24, 27, 0.95);
+                border: 1px solid rgba(255, 255, 255, 0.08);
+                border-radius: 24px;
+            }
+            QLabel { color: white; }
+            QLineEdit {
+                background: rgba(0,0,0,0.3);
+                border: 1px solid rgba(255,255,255,0.1);
+                border-radius: 8px;
+                padding: 12px;
+                color: white;
+                font-size: 14px;
+            }
+            QLineEdit:focus {
+                border: 1px solid #00e676;
+            }
+            QComboBox {
+                padding: 10px;
+                border: 1px solid rgba(255,255,255,0.1);
+                border-radius: 8px;
+                background: rgba(0,0,0,0.3);
+                color: white;
+            }
+        """
+        )
+
         cl = QVBoxLayout(card)
-        cl.setContentsMargins(40, 40, 40, 40)
+        cl.setContentsMargins(40, 50, 40, 50)
         cl.setSpacing(20)
 
+        # Icon / Logo
         icon_lbl = QLabel()
-        icon_lbl.setPixmap(
-            qta.icon("fa5s.fingerprint", color=ACCENT_COLOR).pixmap(64, 64)
-        )
+        icon_lbl.setPixmap(qta.icon("fa5s.shield-alt", color="#00e676").pixmap(72, 72))
         icon_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        cl.addWidget(icon_lbl)
 
-        lbl_title = QLabel(
-            "SECURE ENVIRONMENT",
-            styleSheet=f"font-size: 22px; font-weight: bold; color: {ACCENT_COLOR};",
+        title = QLabel("NDSFC CLASSIFIED")
+        title.setStyleSheet(
+            "font-size: 20px; font-weight: bold; letter-spacing: 2px; color: #e4e4e7;"
         )
-        lbl_title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        cl.addWidget(title)
 
+        cl.addSpacing(20)
+
+        # Inputs
         self.cb_vaults = QComboBox()
+        self.cb_vaults.setFixedHeight(45)
         self.refresh_vaults()
 
-        self.in_pass = QLineEdit(placeholderText="Master Key")
+        self.in_pass = QLineEdit(placeholderText="Access Key")
         self.in_pass.setEchoMode(QLineEdit.EchoMode.Password)
 
-        self.in_2fa = QLineEdit(placeholderText="Authenticator Code")
+        self.in_2fa = QLineEdit(placeholderText="2FA Token")
         self.in_2fa.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
-        btn_login = QPushButton("AUTHENTICATE", objectName="Primary")
+        cl.addWidget(self.cb_vaults)
+        cl.addWidget(self.in_pass)
+        cl.addWidget(self.in_2fa)
+
+        cl.addSpacing(10)
+
+        # Login Button
+        btn_login = QPushButton("ESTABLISH LINK")
+        btn_login.setFixedHeight(50)
+        btn_login.setStyleSheet(
+            """
+            QPushButton {
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #00e676, stop:1 #00b359);
+                color: black;
+                font-weight: bold;
+                border-radius: 10px;
+                font-size: 14px;
+            }
+            QPushButton:hover {
+                background: #00ff88;
+            }
+        """
+        )
         btn_login.setCursor(Qt.CursorShape.PointingHandCursor)
         btn_login.clicked.connect(self.do_login)
+        cl.addWidget(btn_login)
 
-        btn_new = QPushButton("Create New Environment")
+        cl.addStretch()
+
+        # Footer Actions
+        row = QHBoxLayout()
+        btn_new = QPushButton(" Create New")
+        btn_new.setIcon(qta.icon("fa5s.plus", color="gray"))
         btn_new.setStyleSheet(
-            "background: transparent; color: gray; text-align: center;"
+            "background: transparent; color: gray; border: none; font-weight: bold;"
         )
         btn_new.setCursor(Qt.CursorShape.PointingHandCursor)
         btn_new.clicked.connect(self.show_create_vault_dialog)
 
-        btn_imp = QPushButton("Import Vault Backup")
+        btn_imp = QPushButton(" Import")
+        btn_imp.setIcon(qta.icon("fa5s.file-import", color="gray"))
         btn_imp.setStyleSheet(
-            "background: transparent; color: gray; text-align: center;"
+            "background: transparent; color: gray; border: none; font-weight: bold;"
         )
         btn_imp.setCursor(Qt.CursorShape.PointingHandCursor)
         btn_imp.clicked.connect(self.do_vault_import)
 
-        cl.addWidget(icon_lbl)
-        cl.addWidget(lbl_title)
-        cl.addSpacing(10)
-        cl.addWidget(QLabel("Select Environment:"))
-        cl.addWidget(self.cb_vaults)
-        cl.addWidget(self.in_pass)
-        cl.addWidget(self.in_2fa)
-        cl.addStretch()
-        cl.addWidget(btn_login)
-        cl.addWidget(btn_new)
-        cl.addWidget(btn_imp)
+        row.addWidget(btn_new)
+        row.addStretch()
+        row.addWidget(btn_imp)
+        cl.addLayout(row)
 
         layout.addWidget(card)
         self.main_stack.addWidget(w)
@@ -1512,36 +1578,61 @@ class NDSFC_Pro(QMainWindow):
 
         sidebar = QFrame(objectName="Sidebar")
         sidebar.setFixedWidth(280)
+        sidebar.setStyleSheet(
+            """
+            QFrame#Sidebar {
+                background: #09090b;
+                border-right: 1px solid #18181b;
+            }
+            QPushButton {
+                text-align: left;
+                padding: 12px;
+                border-radius: 10px;
+                color: #a1a1aa;
+                font-weight: bold;
+                background: transparent;
+                border: none;
+            }
+            QPushButton:hover {
+                background: rgba(255, 255, 255, 0.03);
+                color: white;
+            }
+        """
+        )
         sb_l = QVBoxLayout(sidebar)
         sb_l.setContentsMargins(20, 40, 20, 20)
 
-        sb_l.addWidget(
-            QLabel(
-                "NDSFC",
-                styleSheet=f"font-size: 26px; font-weight: bold; color: {ACCENT_COLOR};",
-            )
+        title = QLabel("NDSFC TERMINAL")
+        title.setStyleSheet(
+            f"font-size: 18px; font-weight: bold; letter-spacing: 3px; color: {ACCENT_COLOR};"
         )
+        sb_l.addWidget(title)
         sb_l.addSpacing(40)
 
         self.dash_stack = FadeStack()
 
         btns = [
-            ("Dashboard", "fa5s.chart-pie", 0),
-            ("Cryptographer", "fa5s.lock", 1),
-            ("Omega Tools", "fa5s.magic", 2),
-            ("Settings", "fa5s.cog", 3),
+            ("OPERATIONS", "fa5s.chart-pie", 0),
+            ("CRYPTOGRAPHY", "fa5s.lock", 1),
+            ("OMEGA TOOLS", "fa5s.magic", 2),
+            ("ENVIRONMENT", "fa5s.cog", 3),
         ]
 
         self.nav_buttons = []
         for name, icon, idx in btns:
             b = QPushButton(f"  {name}")
             b.setIcon(qta.icon(icon, color="#a1a1aa"))
+            b.setCursor(Qt.CursorShape.PointingHandCursor)
             b.clicked.connect(lambda ch, i=idx: self.switch_tab(i))
             self.nav_buttons.append(b)
             sb_l.addWidget(b)
 
         sb_l.addStretch()
-        b_out = QPushButton(" LOCK SESSION", objectName="Danger")
+        b_out = QPushButton(" DISCONNECT", objectName="Danger")
+        b_out.setIcon(qta.icon("fa5s.power-off", color="gray"))
+        b_out.setStyleSheet(
+            "QPushButton { color: gray; } QPushButton:hover { color: #ff3d3d; }"
+        )
         b_out.clicked.connect(self.do_logout)
         sb_l.addWidget(b_out)
 
@@ -1568,10 +1659,37 @@ class NDSFC_Pro(QMainWindow):
         lbl_welcome.setStyleSheet("font-size: 28px; font-weight: bold; color: white;")
         header.addWidget(lbl_welcome)
         header.addStretch()
+
+        # Search Bar
+        self.txt_search = QLineEdit()
+        self.txt_search.setPlaceholderText("Search Encrypted Index...")
+        self.txt_search.setFixedWidth(300)
+        self.txt_search.setStyleSheet(
+            """
+            QLineEdit {
+                background: #18181b; 
+                border: 1px solid #3f3f46; 
+                border-radius: 15px; 
+                padding: 5px 15px; 
+                color: white;
+            }
+            QLineEdit:focus { border: 1px solid #00e676; }
+        """
+        )
+        self.txt_search.textChanged.connect(self.do_search)
+        header.addWidget(self.txt_search)
+
         l.addLayout(header)
         l.addSpacing(20)
 
-        # Grid
+        # Content Stack
+        self.dash_content = QStackedWidget()
+
+        # PAGE 0: Widgets
+        page_widgets = QWidget()
+        l_widgets = QVBoxLayout(page_widgets)
+        l_widgets.setContentsMargins(0, 0, 0, 0)
+
         grid = QGridLayout()
         grid.setSpacing(20)
 
@@ -1622,9 +1740,14 @@ class NDSFC_Pro(QMainWindow):
         bq2.clicked.connect(self.open_ghostlink)
         ql.addWidget(bq2)
 
+        bq3 = QPushButton("  Rebuild Index")
+        bq3.setIcon(qta.icon("fa5s.search-plus", color="white"))
+        bq3.clicked.connect(self.rebuild_index)
+        ql.addWidget(bq3)
+
         grid.addWidget(q_card, 0, 2)
 
-        # Row 1: Audit Log / Recent Activity
+        # Row 1: Audit Log
         audit_frame = QFrame(objectName="Card")
         audit_frame.setStyleSheet(
             f"QFrame#Card {{ background-color: {CARD_COLOR}; border-radius: 16px; border: 1px solid #27272a; }}"
@@ -1643,23 +1766,67 @@ class NDSFC_Pro(QMainWindow):
         self.list_audit.addItem("[AUDIT] Integrity Check Passed")
 
         al.addWidget(self.list_audit)
+        grid.addWidget(audit_frame, 1, 0, 1, 3)
 
-        grid.addWidget(audit_frame, 1, 0, 1, 3)  # Span 3 cols
+        l_widgets.addLayout(grid)
+        l_widgets.addStretch()
+        self.dash_content.addWidget(page_widgets)
 
-        l.addLayout(grid)
-        l.addStretch()
+        # PAGE 1: Search Results
+        page_results = QWidget()
+        l_results = QVBoxLayout(page_results)
 
-        return p
-        l.addWidget(
-            QLabel("Recent Activity", styleSheet="font-size: 18px; color: gray;")
+        lbl_res = QLabel("Search Results")
+        lbl_res.setStyleSheet("font-size: 18px; font-weight: bold; color: #00e676;")
+        l_results.addWidget(lbl_res)
+
+        self.table_results = QTableWidget()
+        self.table_results.setColumnCount(5)
+        self.table_results.setHorizontalHeaderLabels(
+            ["Filename", "Size", "Date", "Original Path", "Algo"]
         )
-        self.log_list = QListWidget()
-        self.log_list.setStyleSheet(
-            "border: none; background: transparent; font-family: Consolas;"
+        self.table_results.horizontalHeader().setStretchLastSection(True)
+        self.table_results.setStyleSheet(
+            "QTableWidget { background: transparent; border: 1px solid #3f3f46; color: white; } QHeaderView::section { background: #18181b; color: gray; }"
         )
-        l.addWidget(self.log_list)
+        l_results.addWidget(self.table_results)
 
+        self.dash_content.addWidget(page_results)
+
+        l.addWidget(self.dash_content)
         return p
+
+    def do_search(self, text):
+        if not text:
+            self.dash_content.setCurrentIndex(0)
+            return
+
+        self.dash_content.setCurrentIndex(1)
+        if self.indexer:
+            res = self.indexer.search(text)
+            self.table_results.setRowCount(0)
+            for row, item in enumerate(res):
+                self.table_results.insertRow(row)
+                self.table_results.setItem(row, 0, QTableWidgetItem(item["filename"]))
+                self.table_results.setItem(row, 1, QTableWidgetItem(str(item["size"])))
+                self.table_results.setItem(row, 2, QTableWidgetItem(item["c_time"]))
+                self.table_results.setItem(
+                    row, 3, QTableWidgetItem(item.get("path", "Unknown"))
+                )
+                self.table_results.setItem(
+                    row, 4, QTableWidgetItem(item.get("algo", "Unknown"))
+                )
+
+    def rebuild_index(self):
+        d = QFileDialog.getExistingDirectory(self, "Select Directory to Index")
+        if d and self.indexer:
+            self.worker = TaskWorker(self.indexer.scan_directory, d)
+            self.worker.finished.connect(
+                lambda: QMessageBox.information(
+                    self, "Index", "Indexing Operation Complete"
+                )
+            )
+            self.worker.start()
 
     def tab_crypto(self):
         p = QWidget()
@@ -1699,7 +1866,13 @@ class NDSFC_Pro(QMainWindow):
         cl.addWidget(QLabel("Mode:", styleSheet="color: gray;"))
         self.crypto_mode = QComboBox()
         self.crypto_mode.addItems(
-            ["Standard (ChaCha20)", "Quantum-Resistant (PQC)", "2FA Protected"]
+            [
+                "Standard (ChaCha20)",
+                "AES-SIV (Anti-Replay)",
+                "Blowfish (CTR)",
+                "CAST5 (CTR)",
+                "Post-Quantum (Cascade)",
+            ]
         )
         cl.addWidget(self.crypto_mode)
 
@@ -1745,17 +1918,26 @@ class NDSFC_Pro(QMainWindow):
             )
         )
 
-        self.file_list = QListWidget()
-        self.file_list.setAcceptDrops(True)
-        self.file_list.dragEnterEvent = lambda e: e.accept()
-        self.file_list.dragMoveEvent = lambda e: e.accept()
-        self.file_list.dropEvent = self.on_drop
-        self.file_list.setToolTip("Drag & drop files here")
-        self.file_list.setStyleSheet(
-            "border: 2px dashed #3f3f46; background: #18181b; color: white; padding: 10px;"
+        self.file_table = QTableWidget()
+        self.file_table.setColumnCount(3)
+        self.file_table.setHorizontalHeaderLabels(["Filename", "Size", "Path"])
+        self.file_table.horizontalHeader().setStretchLastSection(True)
+        self.file_table.setSelectionBehavior(
+            QAbstractItemView.SelectionBehavior.SelectRows
         )
-        self.file_list.itemSelectionChanged.connect(self.update_file_stats)
-        fcl.addWidget(self.file_list)
+        self.file_table.setAcceptDrops(True)
+        self.file_table.dragEnterEvent = lambda e: e.accept()
+        self.file_table.dragMoveEvent = lambda e: e.accept()
+        # self.file_table.dropEvent = self.on_drop # Connected logic should handle this
+        self.file_table.dropEvent = self.on_drop
+        self.file_table.setToolTip("Drag & drop files here")
+        self.file_table.setStyleSheet(
+            "QTableWidget { background: #18181b; border: 2px dashed #3f3f46; color: white; gridline-color: #3f3f46; }"
+            "QHeaderView::section { background: #27272a; color: gray; padding: 5px; }"
+            "QTableWidget::item:selected { background: #00e676; color: black; }"
+        )
+        self.file_table.itemSelectionChanged.connect(self.update_file_stats)
+        fcl.addWidget(self.file_table)
 
         # File Actions
         file_acts = QHBoxLayout()
@@ -1768,7 +1950,7 @@ class NDSFC_Pro(QMainWindow):
         b_remove.clicked.connect(self.remove_selected_files)
 
         b_clear = QPushButton(" Clear All")
-        b_clear.clicked.connect(self.file_list.clear)
+        b_clear.clicked.connect(lambda: self.file_table.setRowCount(0))
 
         file_acts.addWidget(b_add)
         file_acts.addWidget(b_remove)
@@ -1933,43 +2115,45 @@ class NDSFC_Pro(QMainWindow):
         return p
 
     def on_drop(self, e):
-        files_added = 0
+        files = []
         for u in e.mimeData().urls():
             path = u.toLocalFile()
             if os.path.exists(path) and os.path.isfile(path):
-                self.file_list.addItem(path)
-                files_added += 1
-
-        if files_added > 0:
-            self.update_file_stats()
-            # Visual feedback
-            self.file_list.setStyleSheet(
-                "border: 2px solid #00e676; background: #18181b; color: white; padding: 10px;"
-            )
-            QTimer.singleShot(
-                500,
-                lambda: self.file_list.setStyleSheet(
-                    "border: 2px dashed #3f3f46; background: #18181b; color: white; padding: 10px;"
-                ),
-            )
+                files.append(path)
+        if files:
+            self._add_files_to_table(files)
 
     def add_files(self):
         fs, _ = QFileDialog.getOpenFileNames(self, "Select Files")
-        for f in fs:
-            self.file_list.addItem(f)
+        self._add_files_to_table(fs)
+
+    def _add_files_to_table(self, files):
+        for f in files:
+            if not os.path.exists(f):
+                continue
+            row = self.file_table.rowCount()
+            self.file_table.insertRow(row)
+            name = os.path.basename(f)
+            size = os.path.getsize(f)
+            self.file_table.setItem(row, 0, QTableWidgetItem(name))
+            self.file_table.setItem(row, 1, QTableWidgetItem(f"{size/1024:.2f} KB"))
+            self.file_table.setItem(row, 2, QTableWidgetItem(f))
         self.update_file_stats()
 
     def remove_selected_files(self):
-        for item in self.file_list.selectedItems():
-            self.file_list.takeItem(self.file_list.row(item))
+        rows = sorted(
+            set(index.row() for index in self.file_table.selectedIndexes()),
+            reverse=True,
+        )
+        for r in rows:
+            self.file_table.removeRow(r)
         self.update_file_stats()
 
     def update_file_stats(self):
-        count = self.file_list.count()
+        count = self.file_table.rowCount()
         total_size = 0
-
         for i in range(count):
-            path = self.file_list.item(i).text()
+            path = self.file_table.item(i, 2).text()
             if os.path.exists(path):
                 total_size += os.path.getsize(path)
 
@@ -1997,6 +2181,7 @@ class NDSFC_Pro(QMainWindow):
         res, msg = self.auth.login(pwd, code)
         if res:
             self.watcher = FolderWatcher(CryptoEngine, pwd)
+            self.indexer = IndexManager(vault_name, pwd)
             self.session.start_session(b"TEMP", vault_name)
             self.load_user_settings()
             self.main_stack.fade_to_index(1)
@@ -2009,13 +2194,15 @@ class NDSFC_Pro(QMainWindow):
         if self.watcher:
             self.watcher.stop()
             self.watcher = None
+        self.indexer = None
         self.session.destroy_session()
         self.in_pass.clear()
         self.in_2fa.clear()
         self.main_stack.fade_to_index(0)
 
     def run_encrypt(self):
-        files = [self.file_list.item(i).text() for i in range(self.file_list.count())]
+        count = self.file_table.rowCount()
+        files = [self.file_table.item(i, 2).text() for i in range(count)]
         if not files:
             QMessageBox.warning(self, "No Files", "Please add files to encrypt.")
             return
@@ -2023,8 +2210,10 @@ class NDSFC_Pro(QMainWindow):
         # Map UI selection to mode
         mode_map = {
             "Standard (ChaCha20)": "standard",
-            "Quantum-Resistant (PQC)": "pqc",
-            "2FA Protected": "2fa",
+            "AES-SIV (Anti-Replay)": "siv",
+            "Blowfish (CTR)": "blowfish",
+            "CAST5 (CTR)": "cast",
+            "Post-Quantum (Cascade)": "pqc",
         }
         mode = mode_map.get(self.crypto_mode.currentText(), "standard")
         pwd = self.in_pass.text()  # Using login pass for demo
@@ -2035,13 +2224,17 @@ class NDSFC_Pro(QMainWindow):
 
     def _encrypt_task(self, files, pwd, mode):
         for f in files:
-            CryptoEngine.encrypt_advanced(f, pwd, mode)
+            ok, out_path = CryptoEngine.encrypt_advanced(f, pwd, mode)
+            if ok and self.indexer:
+                self.indexer.add_file(out_path, mode)
+
             if self.chk_shred.isChecked():
                 Shredder.wipe_file(f)
         return "Encryption Complete"
 
     def run_decrypt(self):
-        files = [self.file_list.item(i).text() for i in range(self.file_list.count())]
+        count = self.file_table.rowCount()
+        files = [self.file_table.item(i, 2).text() for i in range(count)]
         pwd = self.in_pass.text()
         self.worker = TaskWorker(self._decrypt_task, files, pwd)
         self.worker.finished.connect(self.on_task_done)
@@ -2056,7 +2249,7 @@ class NDSFC_Pro(QMainWindow):
         ok, msg = res
         if ok:
             QMessageBox.information(self, "Success", msg)
-            self.file_list.clear()
+            self.file_table.setRowCount(0)
             self.update_log()
         else:
             QMessageBox.critical(self, "Error", msg)
