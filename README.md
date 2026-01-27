@@ -1,107 +1,145 @@
 <div align="center">
 
-<img src="assets/Noxium.png" width="360"/>
+<img src="assets/Noxium.png" width="360" alt="NOXIUM logo"/>
 
-# NOXIUM  
-### *Anti-Forensics · Post-Quantum Encryption (PQC Based)*
+# NOXIUM
+### Secure Vault • PQC Hybrid • Anti-Forensics • Windows Only
 
 [![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
-[![Security](https://img.shields.io/badge/Security-Data--Secure-critical?style=for-the-badge&logo=shield&logoColor=white)](#)
-[![Crypto](https://img.shields.io/badge/Crypto-PQC--Based-orange?style=for-the-badge)](#)
+[![Qt](https://img.shields.io/badge/GUI-PyQt6-41CD52?style=for-the-badge&logo=qt&logoColor=white)](#)
 [![Platform](https://img.shields.io/badge/Platform-Windows%2010%2F11-0078D6?style=for-the-badge&logo=windows&logoColor=white)](#)
+[![Status](https://img.shields.io/badge/Status-Beta%2FExperimental-ef4444?style=for-the-badge)](#)
 [![License](https://img.shields.io/badge/License-GPLv3-yellow?style=for-the-badge)](LICENSE)
-
-**NOXIUM** is an advanced digital security suite focused on  
-**deniable encryption**, **forensic invisibility**, and **absolute data sovereignty**.
-
-Designed for hostile environments.
-
----
-
-[ 🇺🇸 English ](#english)
 
 </div>
 
 ---
 
-<a name="english"></a>
-## 🇺🇸 English — Technical Overview
+## Кратко
+- NOXIUM — это настольное приложение для безопасных хранилищ, шифрования файлов и защищенных заметок.
+- Поддерживает гибкие алгоритмы (ChaCha20-Poly1305, AES-256-GCM) и гибридный PQC режим (Kyber, через `pqcrypto`).
+- Работает с vault‑файлами в бинарном формате, JSON больше не используется.
+- Интерфейс минималистичный, с анимациями, темной/светлой темой и кастомными акцентами.
 
-NOXIUM enforces:
-- No plaintext artifacts on disk
-- No persistent encryption keys
-- No recoverable metadata
-
-All cryptographic material exists **only in volatile RAM** and is securely wiped after use.
+> ⚠️ Важно: часть функций экспериментальна и может работать нестабильно. Смотрите раздел **Бета/Experimental**.
 
 ---
 
-### ⚛️ Cryptographic Engine
-
-| Component | Description |
-|---------|-------------|
-| **Post-Quantum Cascade** | Hybrid encryption using `AES-256-GCM` + `ChaCha20-Poly1305` |
-| **Deterministic Encryption** | `AES-SIV` — safe under IV reuse |
-| **KDF** | `Scrypt` + `Argon2` (high memory cost) |
-| **Hashing** | `SHA3-512` |
-| **Legacy Support** | Blowfish-CTR, CAST5-CTR |
-
-> **IMPORTANT:** All algorithms are implemented with explicit zero-memory cleanup.
+## Виджеты интерфейса (основные экраны)
+<table>
+  <tr>
+    <td width="50%">
+      <h3>Mission Control</h3>
+      <ul>
+        <li>Мониторинг системы (CPU/RAM)</li>
+        <li>Аудит действий (Security Audit Log)</li>
+        <li>Поиск по зашифрованному индексу</li>
+        <li>Быстрые действия: Encrypt, GhostLink, Rebuild Index</li>
+      </ul>
+    </td>
+    <td width="50%">
+      <h3>Cryptography</h3>
+      <ul>
+        <li>Очередь файлов и статистика</li>
+        <li>Выбор режима шифрования</li>
+        <li>Сжатие, шредер, PQC гибрид</li>
+        <li>Драг‑энд‑дроп файлов</li>
+      </ul>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <h3>Omega Tools</h3>
+      <ul>
+        <li>Steganography (PNG LSB)</li>
+        <li>Ghost Link (SFTP)</li>
+        <li>PassGen (генератор паролей)</li>
+        <li>Secure Journal (зашифрованные заметки)</li>
+        <li>Folder Watcher (авто‑шифрование)</li>
+      </ul>
+    </td>
+    <td width="50%">
+      <h3>Environment</h3>
+      <ul>
+        <li>Темы: Light/Dark + кастомные акценты</li>
+        <li>Auto‑Lock (таймер)</li>
+        <li>Настройки PQC</li>
+        <li>Backup .vib + Recovery Shares</li>
+      </ul>
+    </td>
+  </tr>
+</table>
 
 ---
 
-### 🧠 Strategic Modules
+## Функциональность (подробно)
 
-#### 📂 Mission Control
-- Encrypted SQLite index (metadata only)
-- Lightning-fast global search
-- Vault & session monitoring
+### Vault и безопасность
+- **Vault v2 (бинарный формат .vault)** с обёрнутым ключом и шифрованным blob‑контейнером.
+- **Автомиграция** со старых JSON‑vaultов: конвертация + удаление JSON.
+- **2FA (TOTP)** и **Duress Password** (аварийное уничтожение).
+- **Сессии в памяти** + авто‑блокировка по таймеру.
+- **Audit Log** для локальных событий (в памяти).
 
-#### 🛡️ Stealth & Anti-Forensics
-- **Duress Password** → silent index annihilation
-- **RAM-only sessions**
-- **Steganography** (PNG LSB matching)
-- **DoD 5220.22-M Shredder** (up to 35 passes , customizable in settings.)
+### Криптографический движок
+- **Файловое шифрование**: ChaCha20‑Poly1305 или AES‑256‑GCM.
+- **PQC Hybrid (Kyber)**: гибридный ключ через KEM + HKDF (опционально).
+- **KDF**: Argon2id (основное), Scrypt (legacy blobs).
+- **Сжатие перед шифрованием** (опционально).
+- **Legacy‑decrypt**: поддержка старых форматов (AES‑SIV, Blowfish‑CTR, CAST‑CTR, ранние PQC‑контейнеры).
+- **Secure Shredder** (DoD 5220.22‑M, до 35 проходов).
 
-#### 🧰 Omega Tools
-- **Ghost Link (SFTP)** — encrypted remote vault transfer
-- **Folder Watcher** — auto-encryption on file drop
-- **Secure Journal** — encrypted markdown notes
-- **`.vib` Vault Integrity Backups**
+### Хранилище и данные
+- **Индексатор**: in‑memory SQLite + зашифрованный `index.db.enc`.
+- **Заметки**: `.note` файлы с шифрованным содержимым.
+- **Бэкапы**: `.vib` архивы, зашифрованные на экспорт/импорт.
+- **Файлы**: `.ndsfc` для зашифрованных файлов.
+
+### Инструменты и сеть
+- **Ghost Link (SFTP)** с опциональным SOCKS5.
+- **Folder Watcher**: авто‑шифрование новых файлов в папке.
+- **Steganography**: скрытие/извлечение данных в PNG.
+- **PassGen**: генератор паролей с авто‑очисткой буфера.
+
+### UI/UX
+- Light/Dark режимы, кастомные акценты.
+- Плавные переходы (FadeStack).
+- Минималистичные карточки и визуальные статусы.
 
 ---
 
-### 📊 Monitoring & Runtime Safety
+## Самодельные (кастомные) компоненты
+- **NFX1 контейнер** для файлового шифрования (структурированный заголовок + флаги).
+- **NDSB/NDSK blob‑форматы** для данных и обёрнутого ключа.
+- **Algebraic Recovery Shares** (на базе Shamir Secret Sharing).
+- **Автомиграция legacy‑форматов** с уничтожением JSON‑артефактов.
 
-- Real-time memory consumption
-- Session lifespan tracking
-- Encryption task status
-- Index integrity checks
-
-> ⚠️ If the process crashes — **keys die with RAM**
+> ⚠️ Эти компоненты не проходили независимый аудит. Используйте осознанно.
 
 ---
 
-### 🏗️ Project Architecture
+## Бета / Experimental
+Некоторые функции находятся в бете и могут работать нестабильно:
+- PQC Hybrid (Kyber) и связанная инфраструктура ключей.
+- Steganography (скрытие в PNG).
+- Ghost Link (SFTP) и SOCKS5 прокси.
+- Folder Watcher (фоновый режим).
+- Recovery Shares (Shamir‑разделение ключа).
+- Индексатор и поиск (in‑memory + encrypted save).
+
+---
+
+## Форматы хранения
 ```
-NOXIUM/
-├── core/
-│ ├── crypto_engine.py
-│ ├── indexer.py
-│ ├── auth.py
-│ ├── vault_manager.py
-│ ├── folder_watcher.py
-│ ├── notes_manager.py
-│ ├── backup_manager.py
-│ └── shredder.py
-├── gui/
-│ └── app_qt.py
-├── vaults/
-└── main.py
+vaults/
+  <vault>.vault           # бинарный vault v2
+  <vault>/index.db.enc    # зашифрованный индекс
+  <vault>/notes/*.note    # зашифрованные заметки
 ```
 
-## 🛠️ Installation
+---
 
+## Установка
 ```bash
 git clone https://github.com/Vyxara-Arch/NOXIUM.git
 cd NOXIUM
@@ -109,20 +147,27 @@ pip install -r requirements.txt
 python main.py
 ```
 
-
-👥 Authors & Contributors
-```
-MintyExtremum — Core Cryptography
-Vyxara-Arch — Architecture & UI
-Blooder — Security Research & Testing
-```
 ---
 
-📜 License 
-GNU GPLv3. This software is provided AS IS. Use responsibly. Freedom requires responsibility. check `LICENSE` for details.
+## Требования
+- Windows 10/11
+- Python 3.10+
+- Библиотеки из `requirements.txt`
 
 ---
+
+## Авторы и вклад
+```
+MintyExtremum  - Core Cryptography
+Vyxara-Arch    - Architecture & UI
+Blooder        - Security Research & Testing
+```
+
+---
+
+## Лицензия
+GNU GPLv3. Приложение поставляется "как есть" без гарантий.
 
 <div align="center">
-🔐 NOXIUM — Leave Nothing Behind · Created with <3
+NOXIUM — Leave Nothing Behind
 </div>
