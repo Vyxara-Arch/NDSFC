@@ -110,20 +110,24 @@ class NotesManager:
 
     def _encrypt_payload(self, payload: bytes, password):
         if self.vault_key:
-            return CryptoEngine.data_encrypt_key_blob(payload, self.vault_key)
+            return CryptoEngine.data_encrypt_key_blob(
+                payload, self.vault_key, context="notes"
+            )
         if not password:
             raise ValueError("Password required")
-        return CryptoEngine.data_encrypt_blob(payload, password)
+        return CryptoEngine.data_encrypt_blob(payload, password, context="notes")
 
     def _decrypt_payload(self, payload: bytes, password):
         if payload.startswith(CryptoEngine.KEY_MAGIC):
             if not self.vault_key:
                 raise ValueError("Vault key required")
-            return CryptoEngine.data_decrypt_key_blob(payload, self.vault_key)
+            return CryptoEngine.data_decrypt_key_blob(
+                payload, self.vault_key, context="notes"
+            )
         if payload.startswith(CryptoEngine.DATA_MAGIC):
             if not password:
                 raise ValueError("Password required")
-            return CryptoEngine.data_decrypt_blob(payload, password)
+            return CryptoEngine.data_decrypt_blob(payload, password, context="notes")
         encrypted_dict = json.loads(payload.decode("utf-8"))
         if not password:
             raise ValueError("Password required")

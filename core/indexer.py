@@ -98,11 +98,15 @@ class IndexManager:
         json_bytes = json.dumps(data).encode("utf-8")
         try:
             if self.vault_key:
-                final_data = CryptoEngine.data_encrypt_key_blob(json_bytes, self.vault_key)
+                final_data = CryptoEngine.data_encrypt_key_blob(
+                    json_bytes, self.vault_key, context="index"
+                )
             else:
                 if not self.password:
                     raise ValueError("Password required")
-                final_data = CryptoEngine.data_encrypt_blob(json_bytes, self.password)
+                final_data = CryptoEngine.data_encrypt_blob(
+                    json_bytes, self.password, context="index"
+                )
 
             with open(self.index_path, "wb") as f:
                 f.write(final_data)
@@ -120,11 +124,15 @@ class IndexManager:
             if raw.startswith(CryptoEngine.KEY_MAGIC):
                 if not self.vault_key:
                     raise ValueError("Vault key required")
-                plain_bytes = CryptoEngine.data_decrypt_key_blob(raw, self.vault_key)
+                plain_bytes = CryptoEngine.data_decrypt_key_blob(
+                    raw, self.vault_key, context="index"
+                )
             elif raw.startswith(CryptoEngine.DATA_MAGIC):
                 if not self.password:
                     raise ValueError("Password required")
-                plain_bytes = CryptoEngine.data_decrypt_blob(raw, self.password)
+                plain_bytes = CryptoEngine.data_decrypt_blob(
+                    raw, self.password, context="index"
+                )
             else:
                 enc_dict = json.loads(raw.decode("utf-8"))
                 if not self.password:

@@ -5,6 +5,8 @@ import datetime
 
 from core.crypto_engine import CryptoEngine
 from core.vault_storage import VAULT_EXT
+from core.tools import SecurityTools
+from core.shredder import Shredder
 
 
 class BackupManager:
@@ -15,6 +17,9 @@ class BackupManager:
         os.makedirs(self.vaults_dir, exist_ok=True)
 
     def export_vault(self, vault_name, output_dir, password):
+        ok, issues = SecurityTools.validate_password(password)
+        if not ok:
+            return False, "Weak password: " + "; ".join(issues)
         vault_path = os.path.join(self.vaults_dir, f"{vault_name}{VAULT_EXT}")
         legacy_path = os.path.join(self.vaults_dir, f"{vault_name}.json")
         vault_data_dir = os.path.join(self.vaults_dir, vault_name)
@@ -41,7 +46,7 @@ class BackupManager:
                             zf.write(abs_path, arcname=rel_path)
 
             ok, enc_path = CryptoEngine.encrypt_file(
-                temp_zip, password, "chacha20-poly1305"
+                temp_zip, password, "chacha20-poly1305", context="backup"
             )
             if ok:
                 final_name = f"{vault_name}_backup_{timestamp}.vib"
@@ -58,9 +63,9 @@ class BackupManager:
             return False, str(e)
         finally:
             if os.path.exists(temp_zip):
-                os.remove(temp_zip)
+                Shredder.wipe_file(temp_zip)
             if os.path.exists(temp_zip + CryptoEngine.ENCRYPTED_EXT):
-                os.remove(temp_zip + CryptoEngine.ENCRYPTED_EXT)
+                Shredder.wipe_file(temp_zip + CryptoEngine.ENCRYPTED_EXT)
 
     def import_vault(self, backup_path, password):
         if not os.path.exists(backup_path):
@@ -80,6 +85,15 @@ class BackupManager:
                 return False, "Decrypted file is not a valid archive. Wrong password?"
 
             with zipfile.ZipFile(dec_path, "r") as zf:
+                for info in zf.infolist():
+                    name = info.filename.replace("\\", "/")
+                    if name.startswith("/") or name.startswith("../") or "/../" in name:
+                        return False, "Unsafe path in backup archive"
+                    if ":" in name.split("/")[0]:
+                        return False, "Unsafe path in backup archive"
+                    target = os.path.abspath(os.path.join(self.vaults_dir, name))
+                    if not target.startswith(os.path.abspath(self.vaults_dir) + os.sep):
+                        return False, "Unsafe path in backup archive"
                 zf.extractall(self.vaults_dir)
 
             return True, "Vault restored successfully"
@@ -88,9 +102,9 @@ class BackupManager:
             return False, f"Restore failed: {str(e)}"
         finally:
             if os.path.exists(temp_enc):
-                os.remove(temp_enc)
+                Shredder.wipe_file(temp_enc)
             if os.path.exists(temp_zip):
                 try:
-                    os.remove(temp_zip)
+                    Shredder.wipe_file(temp_zip)
                 except Exception:
                     pass

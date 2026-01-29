@@ -679,6 +679,27 @@ class InitVaultDialog(QDialog):
         if not all([name, user, pwd, duress]):
             QMessageBox.warning(self, "Error", "All fields are required")
             return
+        if pwd == duress:
+            QMessageBox.warning(
+                self, "Error", "Duress password must be different from the master password."
+            )
+            return
+        ok, issues = SecurityTools.validate_password(pwd)
+        if not ok:
+            QMessageBox.warning(
+                self,
+                "Weak Password",
+                "Master password is too weak:\n- " + "\n- ".join(issues),
+            )
+            return
+        ok, issues = SecurityTools.validate_password(duress)
+        if not ok:
+            QMessageBox.warning(
+                self,
+                "Weak Duress Password",
+                "Duress password is too weak:\n- " + "\n- ".join(issues),
+            )
+            return
 
         res, data = self.vault_mgr.create_vault(name, user, pwd, duress)
         if not res:
