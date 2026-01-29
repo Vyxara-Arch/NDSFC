@@ -65,7 +65,7 @@ def test_security():
 
     # 4. Test Settings Load
     if "file_algo" in am.settings:
-        print(f"PASS: Settings loaded correctly ({am.settings['file_algo']})")
+        print("PASS: Settings loaded correctly")
     else:
         print("FAIL: Settings not loaded.")
         return False

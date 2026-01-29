@@ -54,6 +54,7 @@ from core.backup_manager import BackupManager
 from core.folder_watcher import FolderWatcher
 from core.theme_manager import ThemeManager
 from core.indexer import IndexManager
+from core.tools import SecurityTools
 
 class NDSFC_Pro(QMainWindow):
     def __init__(self):
@@ -1254,15 +1255,39 @@ class NDSFC_Pro(QMainWindow):
         pwd = self._get_session_password()
         if not pwd:
             return
+        legacy_files = [f for f in files if CryptoEngine.classify_file(f) == "legacy"]
+        unknown_files = [f for f in files if CryptoEngine.classify_file(f) == "unknown"]
+        if unknown_files:
+            QMessageBox.warning(
+                self,
+                "Unsupported Files",
+                "Some files are not recognized as Noxium archives.",
+            )
+            return
+        allow_legacy = False
+        if legacy_files:
+            warn = QMessageBox.warning(
+                self,
+                "Legacy Decryption",
+                "Legacy formats are obsolete and may be unsafe (no integrity).\n"
+                "Decrypt only if you trust the source and intend to migrate.\n\n"
+                "Proceed with legacy decryption?",
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            )
+            if warn != QMessageBox.StandardButton.Yes:
+                return
+            allow_legacy = True
         pqc_priv = self.auth.get_pqc_private_key()
-        self.worker = TaskWorker(self._decrypt_task, files, pwd, pqc_priv)
+        self.worker = TaskWorker(self._decrypt_task, files, pwd, pqc_priv, allow_legacy)
         self.worker.finished.connect(self.on_task_done)
         self.worker.start()
 
-    def _decrypt_task(self, files, pwd, pqc_priv):
+    def _decrypt_task(self, files, pwd, pqc_priv, allow_legacy):
         errors = []
         for f in files:
-            ok, msg = CryptoEngine.decrypt_file(f, pwd, pqc_private_key=pqc_priv)
+            ok, msg = CryptoEngine.decrypt_file(
+                f, pwd, pqc_private_key=pqc_priv, allow_legacy=allow_legacy
+            )
             if not ok:
                 errors.append(msg)
         if errors:
@@ -1555,6 +1580,14 @@ class NDSFC_Pro(QMainWindow):
             QLineEdit.EchoMode.Password,
         )
         if not ok or not pwd:
+            return
+        ok, issues = SecurityTools.validate_password(pwd)
+        if not ok:
+            QMessageBox.warning(
+                self,
+                "Weak Password",
+                "Backup password is too weak:\n- " + "\n- ".join(issues),
+            )
             return
 
         bm = BackupManager()

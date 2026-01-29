@@ -62,7 +62,9 @@ class AuthManager:
                     self.vault_key = new_key
             elif changed and vault_key:
                 vault_blob = CryptoEngine.data_encrypt_key_blob(
-                    json.dumps(vault_content).encode("utf-8"), vault_key
+                    json.dumps(vault_content).encode("utf-8"),
+                    vault_key,
+                    context="vault-data",
                 )
                 VaultStorage.write_vault(
                     self.active_vault_path,
@@ -105,7 +107,9 @@ class AuthManager:
                     vault_key = new_key
             else:
                 vault_blob = CryptoEngine.data_encrypt_key_blob(
-                    json.dumps(vault_content).encode("utf-8"), vault_key
+                    json.dumps(vault_content).encode("utf-8"),
+                    vault_key,
+                    context="vault-data",
                 )
                 VaultStorage.write_vault(
                     self.active_vault_path,
@@ -186,7 +190,9 @@ class AuthManager:
             return True
 
         vault_blob = CryptoEngine.data_encrypt_key_blob(
-            json.dumps(self.vault_content).encode("utf-8"), self.vault_key
+            json.dumps(self.vault_content).encode("utf-8"),
+            self.vault_key,
+            context="vault-data",
         )
         try:
             data = VaultStorage.read_vault(self.active_vault_path)
@@ -204,14 +210,20 @@ class AuthManager:
 
     def _decrypt_vault_data(self, data, password):
         if data.get("wrapped_key"):
-            vault_key = CryptoEngine.data_decrypt_blob(data["wrapped_key"], password)
+            vault_key = CryptoEngine.data_decrypt_blob(
+                data["wrapped_key"], password, context="vault-wrap"
+            )
             vault_blob = data["vault_blob"]
-            decrypted_bytes = CryptoEngine.data_decrypt_key_blob(vault_blob, vault_key)
+            decrypted_bytes = CryptoEngine.data_decrypt_key_blob(
+                vault_blob, vault_key, context="vault-data"
+            )
             vault_content = json.loads(decrypted_bytes.decode("utf-8"))
             return vault_key, vault_content
 
         if "vault_blob" in data:
-            decrypted_bytes = CryptoEngine.data_decrypt_blob(data["vault_blob"], password)
+            decrypted_bytes = CryptoEngine.data_decrypt_blob(
+                data["vault_blob"], password, context="vault-data"
+            )
             vault_content = json.loads(decrypted_bytes.decode("utf-8"))
             return None, vault_content
 
@@ -233,9 +245,13 @@ class AuthManager:
             if not vault_key:
                 vault_key = os.urandom(32)
 
-            wrapped_key = CryptoEngine.data_encrypt_blob(vault_key, password)
+            wrapped_key = CryptoEngine.data_encrypt_blob(
+                vault_key, password, context="vault-wrap"
+            )
             vault_blob = CryptoEngine.data_encrypt_key_blob(
-                json.dumps(vault_content).encode("utf-8"), vault_key
+                json.dumps(vault_content).encode("utf-8"),
+                vault_key,
+                context="vault-data",
             )
 
             if data.get("format") == "legacy_json":

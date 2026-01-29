@@ -2,6 +2,7 @@ import os
 import json
 
 from core.vault_storage import VaultStorage, VAULT_EXT
+from core.tools import SecurityTools
 
 VAULT_DIR = "vaults"
 
@@ -20,6 +21,14 @@ class VaultManager:
         path = os.path.join(VAULT_DIR, f"{name}{VAULT_EXT}")
         if os.path.exists(path):
             return False, "Vault already exists!"
+        if password == duress_password:
+            return False, "Duress password must be different from the main password."
+        ok, issues = SecurityTools.validate_password(password)
+        if not ok:
+            return False, "Weak password: " + "; ".join(issues)
+        ok, issues = SecurityTools.validate_password(duress_password)
+        if not ok:
+            return False, "Weak duress password: " + "; ".join(issues)
 
         from argon2 import PasswordHasher
         import pyotp
@@ -55,9 +64,13 @@ class VaultManager:
         }
 
         vault_key = get_random_bytes(32)
-        wrapped_key = CryptoEngine.data_encrypt_blob(vault_key, password)
+        wrapped_key = CryptoEngine.data_encrypt_blob(
+            vault_key, password, context="vault-wrap"
+        )
         encrypted_blob = CryptoEngine.data_encrypt_key_blob(
-            json.dumps(vault_content).encode("utf-8"), vault_key
+            json.dumps(vault_content).encode("utf-8"),
+            vault_key,
+            context="vault-data",
         )
 
         VaultStorage.write_vault(
